@@ -56,7 +56,7 @@ var cadastros []Usuario
 // array usado para enviar o total de cada categoria
 var categorias []CategoriaFull
 // array usado para enviar o total de denuncias por regiao
-var categoriasRegiao[]CategoriaEach
+var categoriasRegiao []CategoriaEach
 // Usado para armazenar o ultimo 'id' do banco de dados
 var countBanco int 
 var countCategoria int 
@@ -98,7 +98,7 @@ func GetCadastros(w http.ResponseWriter, req *http.Request) {
 
 // Adicona mais uma denuncia
 func PostDenuncia(w http.ResponseWriter, req *http.Request){
-
+    //{"categoria":"4","localidade":"2"}
     log.Printf("Post Nova Denuncia") 
     var novaD NovaDenuncia
     
@@ -201,7 +201,7 @@ func CriaArquivoJSON(w http.ResponseWriter, req *http.Request){
         
         // Nesta parte sera gravado todo o conteudo de attCategoria com a alteração acima
         // no arquivo tabela.json
-        if err = ioutil.WriteFile("tabela.json", attCategoria, 0666); err != nil {
+        if err = ioutil.WriteFile("../../bin/pages/tabela.json", attCategoria, 0666); err != nil {
             fmt.Println(err)
         }
 
@@ -209,7 +209,7 @@ func CriaArquivoJSON(w http.ResponseWriter, req *http.Request){
         // a partir daqui cada alteração no arquivo 'tabela.json' o mesmo deve
         // ser relido e salvo em 'jsonOut' para as proximas alterações não serem
         // baseadas no arquivo 'default.json' 
-        jsonOut, err = ioutil.ReadFile("tabela.json")
+        jsonOut, err = ioutil.ReadFile("../../bin/pages/tabela.json")
         if err != nil {
             fmt.Println(err)
         }  
@@ -218,23 +218,28 @@ func CriaArquivoJSON(w http.ResponseWriter, req *http.Request){
         // Obs.: apesar de ser escrito no formato string
         // o Javascript na hora de ler entendera que é um numero INT pois não tem " "
         attTotal := bytes.Replace(jsonOut, []byte("0"), []byte(item.Total), 1)
-        if err = ioutil.WriteFile("tabela.json", attTotal, 0666); err != nil {
+        if err = ioutil.WriteFile("../../bin/pages/tabela.json", attTotal, 0666); err != nil {
             fmt.Println(err)
         }
 
-        jsonOut, err = ioutil.ReadFile("tabela.json")
+        jsonOut, err = ioutil.ReadFile("../../bin/pages/tabela.json")
         if err != nil {
                 fmt.Println(err)
         }   
     }
 
-    out, err := ioutil.ReadFile("tabela.json")
-    if err != nil {
-        fmt.Println(err)
-    }
+    out, _ := ioutil.ReadFile("tabela.json")
+    //if err != nil {
+    //    fmt.Println(err)
+    //}
 
-    fmt.Println(out)
+    //texto := []byte("conteudo")
+    //err = ioutil.WriteFile("../../bin/pages/teste.json.html", out, 0644)
+    //if err != nil {
+    //    fmt.Println(err)
+    //}
 
+    //fmt.Println(out)
     json.NewEncoder(w).Encode(out)
 }
 
@@ -249,7 +254,8 @@ func GetUMACategoria(w http.ResponseWriter, req *http.Request) {
             categoriaFound = append(categoriaFound,item)
         }
     }
-    json.NewEncoder(w).Encode(categoriaFound) 
+    json.NewEncoder(w).Encode(categoriasRegiao) 
+    //json.NewEncoder(w).Encode(categoriaFound) 
 }
 
 // envia os dados das categorias via GET
@@ -402,6 +408,6 @@ func main() {
     router.HandleFunc("/categorias/", PostDenuncia).Methods("POST") // adiciona nova categoria
 
     // Não retorna nem envia nada, apenas atualiza o arquivo tabela.json aqui no server [util para teste]
-    router.HandleFunc("/categorias/server", CriaArquivoJSON) 
+    router.HandleFunc("/categorias/api/{id}", CriaArquivoJSON).Methods("GET")
     log.Fatal(http.ListenAndServe(":8080", router)) // Server na porta 8080 [ localhost:8080 ]
 }

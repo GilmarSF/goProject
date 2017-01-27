@@ -24,6 +24,7 @@ func main() {
  
 func index(w http.ResponseWriter, r *http.Request) {
   t, _ := template.ParseFiles("public/index.html") // salva o html em 't'
+  log.Println(t)
   t.Execute(w, nil) // exibe a pagina index.html
 }
  
