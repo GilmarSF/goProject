@@ -40,6 +40,7 @@ var staticPages = populateStaticPages()
 var page_alias string
 
 func attHTML (){
+	// função usada para atualizar os arquivos .html e .json
 	themeName  = getThemeName()
 	staticPages = populateStaticPages()
 }
@@ -47,9 +48,9 @@ func attHTML (){
 func serveWeb () {
 	
 	gorillaRoute := mux.NewRouter()
-
 	gorillaRoute.HandleFunc("/", serveContent)
-	gorillaRoute.HandleFunc("/{page_alias}", serveContent)  //URL com parametros dinamicos
+	// URL com parametros dinamicos
+	gorillaRoute.HandleFunc("/{page_alias}", serveContent)  
 
 	http.HandleFunc("/img/", serveResource)
 	http.HandleFunc("/css/", serveResource)
@@ -61,24 +62,27 @@ func serveWeb () {
 
 func atualizaJSON(){
 	log.Printf("atualiza arquivo JSON") 
+	// Busca na API todas as categorias e o total de denuncias de cada uma
 	respostaFull, err := http.Get("http://localhost:8080/categorias/")
 	if err != nil {
 		log.Println(err)
 	}
 
+	// Copia apenas o corpo onde esta os dados solicitados
 	dadosRespostaFull, err := ioutil.ReadAll(respostaFull.Body)
 	if err != nil {
 		log.Println(err)
 	}
-
+	// cria a Struct que ira salvar os dados recebidos da API
 	var categFull []CategoriaFull
-	json.Unmarshal(dadosRespostaFull, &categFull) // coverte de json para struct
+	// coverte de json para struct
+	json.Unmarshal(dadosRespostaFull, &categFull) 
 
-	for _, item := range categFull{
-		log.Println(item.Nome, item.Total)	
-	}	
+	//for _, item := range categFull{
+	//	log.Println(item.Nome, item.Total)	
+	//}	
 
-	///////////////////////////////////// por categoria
+	///////////////////////////////////// busca por categoria e regiao
 
 	respostaEach, err := http.Get("http://localhost:8080/categorias/0")
 	if err != nil {
@@ -97,21 +101,25 @@ func atualizaJSON(){
 	//	log.Println(item.ID, item.Nome, item.Regiao, item.Total)	
 	//}
 
-	////////////////////////////////////////
+	//////////////////////////////////////// rotina para escrever nos arquivos
 
 	path := "B:/go/Github-faculdade/goProject/rest-full/bin/pages/"
+	// arquivo default.json com o formato padrão do JSON que a pagina lê
 	jsonOut, err := ioutil.ReadFile(path+"default.json")
     if err != nil {
         log.Println(err)
     }
    
     for _, item := range categFull { 
-
+    	// Com o conteudo lido do arquivo 'default.json', sera substituido a 1ª palavra 'Categoria'
+    	// pelo Nome da categoria salva em 'categFull' atual do for range 
     	attCategoria := bytes.Replace(jsonOut, []byte("Categoria"), []byte(item.Nome), 1)
+    	// Sobrescreve/Cria arquivo 'geral.json.html' com o conteudo de 'default.json'
+    	// em 'path' esta o camminho onde o arquivo deve ser salvo
 		if err = ioutil.WriteFile(path+"geral.json.html", attCategoria, 0666); err != nil {
             log.Println(err)
         }
-
+        // Lê o novo conteudo do JSON, caso contrario iria sobrescrever
         jsonOut, err = ioutil.ReadFile(path+"geral.json.html")
         if err != nil {
             log.Println(err)
@@ -132,7 +140,7 @@ func atualizaJSON(){
     if err != nil {
         log.Println(err)
     }
-
+    // Mesma rotina acima, porem agora separado as categorias por região
     for _, item := range categEach { 
         if strings.ToUpper(item.Nome) == strings.ToUpper(page_alias) { 
             //categoriaFound = append(categoriaFound,item)
@@ -159,6 +167,7 @@ func atualizaJSON(){
 	        }   
 	    }
     }
+    // Atualiza todos os arquivos .html e .json que serão usados nas paginas
     attHTML()
 }
 
@@ -243,5 +252,3 @@ func serveResource(w http.ResponseWriter, req *http.Request){
 		w.WriteHeader(404)
 	}
 }
-
-
