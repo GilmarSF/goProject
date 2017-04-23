@@ -73,6 +73,21 @@ go get github.com/derekparker/delve/cmd/dlv (DEBUG para VS code)
 
 criar as pastas dos projetos a partir do diretorio PATH
 
+--------------------------------------------------------------------
+// selects para o Projeto
+
+SELECT l.cidade, l.regiao, c.categoria 
+FROM tab_denuncia d 
+JOIN tab_localidade l ON d.localidade = l.id
+JOIN tab_categoria c ON d.categoria = c.id
+WHERE d.categoria = 2
+
+SELECT COUNT(*)
+from tab_denuncia
+where categoria = 1
+
+-----------------------------------------------------------------------
+
 Help GIT
 git clone [endereço] shift + insert
 git add .
@@ -98,3 +113,4 @@ git checkout arquivo (ctrl+z)
 git reset HEAD (volta o commit)
 git chechout -b nome (cria branch)
 git checkout -D nome (delete branch)
+
