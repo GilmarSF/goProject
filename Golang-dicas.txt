@@ -86,6 +86,10 @@ SELECT COUNT(*)
 from tab_denuncia
 where categoria = 1
 
+SELECT COUNT(*)
+from tab_denuncia
+where localidade = 2
+
 -----------------------------------------------------------------------
 
 Help GIT
