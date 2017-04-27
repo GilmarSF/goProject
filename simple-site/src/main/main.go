@@ -33,6 +33,7 @@ func greeter(w http.ResponseWriter, r *http.Request) {
   dados.Idade = r.FormValue("idade")
   t, _ := template.ParseFiles("public/greeter.html") // salva o html em 't'
   err := t.Execute(w, dados) // para exibir a pagina greeter.html
+  // se tiver erro
   if err != nil {
     http.Error(w, err.Error(), http.StatusInternalServerError)
   }
