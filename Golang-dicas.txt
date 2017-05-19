@@ -118,3 +118,4 @@ git reset HEAD (volta o commit)
 git chechout -b nome (cria branch)
 git checkout -D nome (delete branch)
 
+https://tutorialedge.net/post/golang/creating-restful-api-with-golang/
