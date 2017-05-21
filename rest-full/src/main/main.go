@@ -27,12 +27,11 @@ func GetUsuario(w http.ResponseWriter, req *http.Request) {
     params := mux.Vars(req) // salva o 'id' passado na requisição
     for _, item := range cadastros { // For sera executado de acordo com o tamanho do array 'cadastros'
         if item.ID == params["id"] { // Se encontrar uma Usuario com o ID enviado
-			fmt.Fprintln(w, "Usuario: "+item.Nome+"\n")
             json.NewEncoder(w).Encode(item) // imprime os dados da Usuario
             return // sai da func
         }
     }
-	fmt.Fprintln(w, "Usuario não encontrada!")
+    json.NewEncoder(w).Encode(&Usuario{})
 }
  
 // traz a cadastros toda. Todas todas Usuarios do array 'cadastros'
@@ -41,13 +40,11 @@ func GetCadastros(w http.ResponseWriter, req *http.Request) {
 }
  
 func PostUsuario(w http.ResponseWriter, req *http.Request) {
-    //params := mux.Vars(req)
     var usuario Usuario
     
     _ = json.NewDecoder(req.Body).Decode(&usuario)
     fmt.Println(usuario)
     count++ // usado para sempre o numero do 'id' ser id+1
-    //usuario.ID = strconv.Itoa(count)
 
     db, err := sql.Open("mssql", "server=WARRIOR\\SQLEXPRESS;user id=sa;password=123456;database=joseDB;port=1433")
     if err != nil {
@@ -62,7 +59,6 @@ func PostUsuario(w http.ResponseWriter, req *http.Request) {
     defer db.Close()   // fecha conexão com o Banco
     
     connectionDB() // atualiza struct
-    //cadastros = append(cadastros, usuario) // adiciona ao final de 'cadastros'
     json.NewEncoder(w).Encode(cadastros)
 }
  
