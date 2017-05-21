@@ -1,11 +1,12 @@
 package main
 
 import (
-	"encoding/json"
-	"fmt"
-	"io/ioutil"
+	//"fmt"
+	//"io/ioutil"
 	"log"
 	"net/http"
+	"encoding/json"
+	"bytes"
 )
 
 type Usuario struct {
@@ -17,21 +18,31 @@ type Usuario struct {
 }
 
 func main() {
-	// coleta da API 
-	respostaAPI, err := http.Get("http://localhost:8080/cadastros/4")
+
+	// Grava na API
+	payload := Usuario{Nome:"testPost",Email:"foi@certo.com", Senha:"uruu"}
+	// convert struct para json
+	jsonValue, _ := json.Marshal(payload)
+
+	_, err := http.Post("http://localhost:8080/cadastros/", "application/json", bytes.NewBuffer(jsonValue))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	/*// coleta da API 
+	respostaAPI, err := http.Get("http://localhost:8080/cadastros/2")
 	if err != nil {
 		log.Fatal(err)
 	}
 	
-	respostaDados, err := ioutil.ReadAll(respostaAPI.Body)
+	dadosResposta, err := ioutil.ReadAll(respostaAPI.Body)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	var usuario Usuario
 	// coverte de json para struct
-	json.Unmarshal(respostaDados, &usuario)
+	json.Unmarshal(dadosResposta, &usuario)
 
-	fmt.Println(usuario.Nome)
-
+	fmt.Println(usuario.Nome)*/
 }
