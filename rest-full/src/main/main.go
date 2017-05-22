@@ -11,6 +11,7 @@ import (
     _ "github.com/denisenkom/go-mssqldb"
 )
  
+// struct Principal criada para armazenar os dados retornados do Banco
 type Usuario struct {
     //"omitempty", quando usado omite este atributo caso seja 'null'
     ID      string  `json:"id,omitempty"`
@@ -31,14 +32,15 @@ func GetUsuario(w http.ResponseWriter, req *http.Request) {
             return // sai da func
         }
     }
-    json.NewEncoder(w).Encode(&Usuario{})
+    json.NewEncoder(w).Encode(&Usuario{}) // Se não encontrar, devolve um json vazio
 }
  
 // traz a cadastros toda. Todas todas Usuarios do array 'cadastros'
 func GetCadastros(w http.ResponseWriter, req *http.Request) {
     json.NewEncoder(w).Encode(cadastros)
 }
- 
+
+// Adiciona mais um Usuario na tab_usuario
 func PostUsuario(w http.ResponseWriter, req *http.Request) {
     var usuario Usuario
     
@@ -61,18 +63,17 @@ func PostUsuario(w http.ResponseWriter, req *http.Request) {
     connectionDB() // atualiza struct
     json.NewEncoder(w).Encode(cadastros)
 }
- 
-/* Quando o 'id' for deletado, sera preciso recriar o slice com o dados restantes, por isso o uso do 'indiceArray'
-o for a cada rodada grava em 'indiceArray' o indice do array que ele esta.*/
+
+// Deleta o usuario da tab_usuario de acordo com o ID passado
 func DeleteUsuario(w http.ResponseWriter, req *http.Request) {
-    params := mux.Vars(req)
+    params := mux.Vars(req) // salva em 'params' os dados passados na url
 
     db, err := sql.Open("mssql", "server=WARRIOR\\SQLEXPRESS;user id=sa;password=123456;database=joseDB;port=1433")
     if err != nil {
         log.Println("Open Failed: ", err.Error())
     }
 
-    del, _ := strconv.Atoi(params["id"])
+    del, _ := strconv.Atoi(params["id"]) // converte de String para Int
     rows, err := db.Query("DELETE FROM tab_usuario WHERE id = ?1", del) 
     if err != nil {
         log.Fatal(err)
@@ -101,7 +102,6 @@ func connectionDB() {
     }
 
     // db.Query usado para comandos no Banco
-    //traz todas as linha do campo 'regiao' na tab_localidade
     rows, err := db.Query("select id, nome, email, senha from tab_usuario") 
     if err != nil {
         log.Fatal(err)
@@ -114,12 +114,12 @@ func connectionDB() {
     // rows.Next usado para varrer o objeto 'rows' e pegar os valores retornados da Query
     for rows.Next() {
 
-        addUsuario := Usuario{}
+        addUsuario := Usuario{} // struct criada para receber os dados do banco de dados
         if err := rows.Scan(&addUsuario.ID, &addUsuario.Nome, &addUsuario.Email, &addUsuario.Senha); err != nil { 
             log.Fatal(err)
         }
         /*fmt.Printf(addUsuario.ID+"\n"); fmt.Printf(addUsuario.Nome+"\n"); fmt.Printf(addUsuario.Email+"\n")*/
-        cadastros = append(cadastros, addUsuario) //salva o retorno neste slice "slice=array flexivel"
+        cadastros = append(cadastros, addUsuario) // adiciona na struct principal os dados do banco
         count, _ = strconv.Atoi(addUsuario.ID) // pega o valor do ID do ultimo dado buscado no banco
     }
 
