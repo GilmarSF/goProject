@@ -131,6 +131,7 @@ func DeleteUsuario(w http.ResponseWriter, req *http.Request) {
     json.NewEncoder(w).Encode(cadastros)
 }
 
+// cria o arquivo tabela.json no server
 func CriaJSON(w http.ResponseWriter, req *http.Request){
 
     // Busca no banco de dados todas as categorias e os totais de reclamações de novo
@@ -185,6 +186,21 @@ func CriaJSON(w http.ResponseWriter, req *http.Request){
                 fmt.Println(err)
         }   
     }
+
+    out, err := ioutil.ReadFile("tabela.json")
+    if err != nil {
+        fmt.Println(err)
+    }
+
+    fmt.Println(out)
+
+    json.NewEncoder(w).Encode(out)
+}
+
+// envia os dados das categorias via GET
+func EnviaJSON(w http.ResponseWriter, req *http.Request){
+    fmt.Printf("\nGet categorias\n") 
+    json.NewEncoder(w).Encode(categorias)
 }
 
 // Atualiza a struct Usuario com os dados do Banco
@@ -294,6 +310,7 @@ func main() {
     router.HandleFunc("/cadastros/{id}", GetUsuario).Methods("GET")
     router.HandleFunc("/cadastros/", PostUsuario).Methods("POST")
     router.HandleFunc("/cadastros/{id}", DeleteUsuario).Methods("DELETE")
-    router.HandleFunc("/categorias/", CriaJSON) // Não retorna nem envia nada, apenas atualiza o arquivo tabela.json
+    router.HandleFunc("/categorias/", EnviaJSON).Methods("GET")
+    router.HandleFunc("/categorias/server", CriaJSON) // Não retorna nem envia nada, apenas atualiza o arquivo tabela.json
     log.Fatal(http.ListenAndServe(":8080", router)) // Server na porta 8080 [ localhost:8080 ]
 }
