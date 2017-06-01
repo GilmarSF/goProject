@@ -32,19 +32,28 @@ type Usuario struct {
     Senha   string  `json:"senha,omitempty"`
 }
 
-type Categoria struct{
+type CategoriaFull struct{
     ID      string
     Nome    string
     Total   string
+}
 
+type CategoriaEach struct{
+    ID      string
+    Nome    string
+    Regiao  string
+    Total   int
 }
 /* VARIAVEIS GLOBAIS PODEM SER USADAS EM QUALQUER PARTE DO CÓDiGO*/
 // array para salvar os Usuarios
 var cadastros []Usuario 
-
-var categorias []Categoria
+// array usado para enviar o total de cada categoria
+var categorias []CategoriaFull
+// array usado para enviar o total de denuncias por regiao
+var categoriasRegiao[]CategoriaEach
 // Usado para armazenar o ultimo 'id' do banco de dados
-var count int 
+var countBanco int 
+var countCategoria int 
  
 // Função utilizada enviar apenas um Usuario via Rest
 func GetUsuario(w http.ResponseWriter, req *http.Request) {
@@ -78,7 +87,7 @@ func GetUsuario(w http.ResponseWriter, req *http.Request) {
 // traz a cadastros toda. Todas todas Usuarios do array 'cadastros'
 func GetCadastros(w http.ResponseWriter, req *http.Request) {
     fmt.Printf("\nGet cadastros\n") 
-    json.NewEncoder(w).Encode(cadastros)
+    json.NewEncoder(w).Encode(cadastros) //correto cadastros
 }
 
 // Adiciona mais um Usuario na tab_usuario
@@ -89,14 +98,14 @@ func PostUsuario(w http.ResponseWriter, req *http.Request) {
     
     _ = json.NewDecoder(req.Body).Decode(&usuario)
     fmt.Println(usuario)
-    count++ // usado para sempre o numero do 'id' ser id+1
+    countBanco++ // usado para sempre o numero do 'id' ser id+1
 
     db, err := sql.Open("mssql", "server=pwbt.database.windows.net;user id=admin-jose;password=123abc!@#;database=PWBT;port=1433")
     if err != nil {
         log.Println("Erro ao conectar com o Banco de dados:", err.Error())
     }
 
-    rows, err := db.Query("INSERT INTO tab_usuario (id, nome, email, senha) VALUES (?1, ?2, ?3, ?4)", count, usuario.Nome, usuario.Email, usuario.Senha) 
+    rows, err := db.Query("INSERT INTO tab_usuario (id, nome, email, senha) VALUES (?1, ?2, ?3, ?4)", countBanco, usuario.Nome, usuario.Email, usuario.Senha) 
     if err != nil {
         log.Println("Erro no INSERT:", err.Error())
     }
@@ -132,7 +141,7 @@ func DeleteUsuario(w http.ResponseWriter, req *http.Request) {
 }
 
 // cria o arquivo tabela.json no server
-func CriaJSON(w http.ResponseWriter, req *http.Request){
+func CriaArquivoJSON(w http.ResponseWriter, req *http.Request){
 
     // Busca no banco de dados todas as categorias e os totais de reclamações de novo
     // Assim toda vez que chamar essa func os dados estarão sempre att 
@@ -197,8 +206,22 @@ func CriaJSON(w http.ResponseWriter, req *http.Request){
     json.NewEncoder(w).Encode(out)
 }
 
+// função para enviar apenas uma categoria com o total por regiao
+func GetUMACategoria(w http.ResponseWriter, req *http.Request) {
+    // OBSERVAÇÂO: comentarios de como funciona esta na 'func GetUsuario'
+    fmt.Printf("\nGet uma Categoria\n") 
+    params := mux.Vars(req) 
+    var categoriaFound []CategoriaEach
+    for _, item := range categoriasRegiao { 
+        if item.ID == params["id"] { 
+            categoriaFound = append(categoriaFound,item)
+        }
+    }
+    json.NewEncoder(w).Encode(categoriaFound) 
+}
+
 // envia os dados das categorias via GET
-func EnviaJSON(w http.ResponseWriter, req *http.Request){
+func GetCategorias(w http.ResponseWriter, req *http.Request){
     fmt.Printf("\nGet categorias\n") 
     json.NewEncoder(w).Encode(categorias)
 }
@@ -246,7 +269,7 @@ func AtualizaUsuarios() {
         cadastros = append(cadastros, addUsuario)
 
         // Pega o valor do ID do ultimo dado buscado no banco e converte de String para Int
-        count, _ = strconv.Atoi(addUsuario.ID) 
+        countBanco, _ = strconv.Atoi(addUsuario.ID) 
     }
 
     fmt.Printf("\nUsuarios atualizados!\n")
@@ -264,30 +287,39 @@ func AtualizaCategorias() {
     }
 
     // Select traz todos os Nomes das categorias e as quantidades de denuncias de cada um
-    rows, err := db.Query("SELECT d.id_categoria, c.categoria, COUNT(d.id_categoria) FROM tab_denuncia d JOIN tab_categoria c ON d.id_categoria = c.id GROUP BY d.id_categoria, c.categoria") 
+    rowsFull, err := db.Query("SELECT d.id_categoria, c.categoria, COUNT(d.id_categoria) FROM tab_denuncia d JOIN tab_categoria c ON d.id_categoria = c.id GROUP BY d.id_categoria, c.categoria") 
     if err != nil {
-        log.Println("Erro no SELECT das Categorias:", err.Error())
+        log.Println("Erro no SELECT das CategoriasFull:", err.Error())
     }
 
+    // select usado para trazer a Categoria e a quantidade de denuncias por regia
+    rowsEach, err := db.Query("SELECT d.id_categoria, c.categoria, l.regiao, COUNT(d.id_localidade) FROM tab_denuncia d JOIN tab_categoria c ON d.id_categoria = c.id JOIN tab_localidade l ON d.id_localidade = l.id GROUP BY d.id_localidade, d.id_categoria, c.categoria, l.regiao") 
+    if err != nil {
+        log.Println("Erro no SELECT das CategoriasCada:", err.Error())
+    }
+
+
     // finaliza o comando para Query
-    defer rows.Close() 
+    defer rowsFull.Close() 
+    defer rowsEach.Close()
     // fecha conexão com o Banco
     defer db.Close()   
     
     // Zera o Array antes de buscar novos dados no banco.
     // Dessa forma evita dados repetidos
     categorias = categorias[:0]
+    categoriasRegiao = categoriasRegiao[:0]
 
-    // rows.Next usado para varrer o objeto 'rows' e pegar os valores retornados da Query
-    for rows.Next() {
+    // rowsFull.Next usado para varrer o objeto 'rowsFull' e pegar os valores retornados da Query
+    for rowsFull.Next() {
         // Struct criada para receber os dados do banco de dados
         // Uma Struct permite receber dados de diferentes tipos: String, Int ...
-        addCategoria := Categoria{} 
+        addCategoria := CategoriaFull{} 
 
-        // rows.Scan varre o objeto rows e salva os valores na variaveis citadas abaixo.
+        // rowsFull.Scan varre o objeto rowsFull e salva os valores na variaveis citadas abaixo.
         // As variaveis são salvas na mesma ordem que são coletados do Banco de dados
-        if err := rows.Scan(&addCategoria.ID, &addCategoria.Nome, &addCategoria.Total); err != nil { 
-            log.Println("Erro ao salvar as categorias retornados do Banco:", err.Error())
+        if err := rowsFull.Scan(&addCategoria.ID, &addCategoria.Nome, &addCategoria.Total); err != nil { 
+            log.Println("Erro ao salvar as categoriasFull retornados do Banco:", err.Error())
         }
         
         // adiciona na struct principal os dados do banco
@@ -295,7 +327,16 @@ func AtualizaCategorias() {
         categorias = append(categorias, addCategoria)
 
         // Pega o valor do ID do ultimo dado buscado no banco e converte de String para Int
-        count, _ = strconv.Atoi(addCategoria.ID) 
+        countCategoria, _ = strconv.Atoi(addCategoria.ID) 
+    }
+
+    for rowsEach.Next(){
+        addCategoria := CategoriaEach{}
+        if err := rowsEach.Scan(&addCategoria.ID, &addCategoria.Nome, &addCategoria.Regiao, &addCategoria.Total); err != nil{
+            log.Println("Erro ao salvar as categoriasEach retornados do Banco:", err.Error())
+        } 
+
+        categoriasRegiao = append(categoriasRegiao, addCategoria)
     }
 
     fmt.Printf("\nCategorias atualizadas!\n")
@@ -306,11 +347,17 @@ func main() {
     AtualizaUsuarios()   
     AtualizaCategorias() 
     router := mux.NewRouter()
-    router.HandleFunc("/cadastros/", GetCadastros).Methods("GET")
-    router.HandleFunc("/cadastros/{id}", GetUsuario).Methods("GET")
-    router.HandleFunc("/cadastros/", PostUsuario).Methods("POST")
-    router.HandleFunc("/cadastros/{id}", DeleteUsuario).Methods("DELETE")
-    router.HandleFunc("/categorias/", EnviaJSON).Methods("GET")
-    router.HandleFunc("/categorias/server", CriaJSON) // Não retorna nem envia nada, apenas atualiza o arquivo tabela.json
+
+    // Caso queira trabalhar com cadastros
+    router.HandleFunc("/cadastros/", GetCadastros).Methods("GET") // JSON com todos os cadastros
+    router.HandleFunc("/cadastros/{id}", GetUsuario).Methods("GET") // JSON com apenas 1 cadastro
+    router.HandleFunc("/cadastros/", PostUsuario).Methods("POST") // JSON para receber o um novo usuario
+    router.HandleFunc("/cadastros/{id}", DeleteUsuario).Methods("DELETE") // JSON para deletar um usuario
+
+    router.HandleFunc("/categorias/", GetCategorias).Methods("GET") // JSON com todas as categorias
+    router.HandleFunc("/categorias/{id}", GetUMACategoria).Methods("GET") // devolve apenas uma categoria
+
+    // Não retorna nem envia nada, apenas atualiza o arquivo tabela.json aqui no server [util para teste]
+    router.HandleFunc("/categorias/server", CriaArquivoJSON) 
     log.Fatal(http.ListenAndServe(":8080", router)) // Server na porta 8080 [ localhost:8080 ]
 }
