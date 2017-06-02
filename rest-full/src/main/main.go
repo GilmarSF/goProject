@@ -33,17 +33,23 @@ type Usuario struct {
 }
 
 type CategoriaFull struct{
-    ID      string
-    Nome    string
-    Total   string
+    ID      string  `json:"id,omitempty"`
+    Nome    string  `json:"nome,omitempty"`
+    Total   string  `json:"total,omitempty"`
 }
 
 type CategoriaEach struct{
-    ID      string
-    Nome    string
-    Regiao  string
-    Total   int
+    ID      string `json:"id,omitempty"`
+    Nome    string `json:"nome,omitempty"`
+    Regiao  string `json:"regiao,omitempty"`
+    Total   string `json:"total,omitempty"`
 }
+
+type NovaDenuncia struct{
+    Categoria string    `json:"categoria,omitempty"`
+    Localidade string   `json:"localidade,omitempty"`
+}
+
 /* VARIAVEIS GLOBAIS PODEM SER USADAS EM QUALQUER PARTE DO CÓDiGO*/
 // array para salvar os Usuarios
 var cadastros []Usuario 
@@ -90,6 +96,32 @@ func GetCadastros(w http.ResponseWriter, req *http.Request) {
     json.NewEncoder(w).Encode(cadastros) //correto cadastros
 }
 
+// Adicona mais uma denuncia
+func PostDenuncia(w http.ResponseWriter, req *http.Request){
+
+    fmt.Printf("\nPost Nova Denuncia\n") 
+    var novaD NovaDenuncia
+    
+    _ = json.NewDecoder(req.Body).Decode(&novaD)
+    fmt.Println(novaD)
+    countCategoria++ // usado para sempre o numero do 'id' ser id+1
+
+    db, err := sql.Open("mssql", "server=pwbt.database.windows.net;user id=admin-jose;password=123abc!@#;database=PWBT;port=1433")
+    if err != nil {
+        log.Println("Erro ao conectar com o Banco de dados:", err.Error())
+    }
+
+    rows, err := db.Query("INSERT into tab_denuncia (id, id_categoria, id_localidade) VALUES (?1, ?2, ?3)", countCategoria, novaD.Categoria, novaD.Localidade)
+    if err != nil {
+        log.Println("Erro no INSERT:", err.Error())
+    }
+    defer rows.Close() // fecha o comando Query
+    defer db.Close()   // fecha conexão com o Banco
+    
+    AtualizaCategorias() // atualiza struct no banco
+    //json.NewEncoder(w).Encode(categorias)
+}
+
 // Adiciona mais um Usuario na tab_usuario
 func PostUsuario(w http.ResponseWriter, req *http.Request) {
 
@@ -113,7 +145,7 @@ func PostUsuario(w http.ResponseWriter, req *http.Request) {
     defer db.Close()   // fecha conexão com o Banco
     
     AtualizaUsuarios() // atualiza struct no banco
-    json.NewEncoder(w).Encode(cadastros)
+    //json.NewEncoder(w).Encode(cadastros)
 }
 
 // Deleta o usuario da tab_usuario de acordo com o ID passado
@@ -297,11 +329,16 @@ func AtualizaCategorias() {
     if err != nil {
         log.Println("Erro no SELECT das CategoriasCada:", err.Error())
     }
-
+    // select apenas para trazer o valor do ultimo ID
+    rowsCount, err := db.Query("select MAX(id) from tab_denuncia") 
+    if err != nil {
+        log.Println("Erro no SELECT count categoria:", err.Error())
+    }
 
     // finaliza o comando para Query
     defer rowsFull.Close() 
     defer rowsEach.Close()
+    defer rowsCount.Close()
     // fecha conexão com o Banco
     defer db.Close()   
     
@@ -327,7 +364,6 @@ func AtualizaCategorias() {
         categorias = append(categorias, addCategoria)
 
         // Pega o valor do ID do ultimo dado buscado no banco e converte de String para Int
-        countCategoria, _ = strconv.Atoi(addCategoria.ID) 
     }
 
     for rowsEach.Next(){
@@ -337,6 +373,13 @@ func AtualizaCategorias() {
         } 
 
         categoriasRegiao = append(categoriasRegiao, addCategoria)
+    }
+
+    for rowsCount.Next(){
+        
+        if err := rowsCount.Scan(&countCategoria); err != nil{
+            log.Println("Erro ao salvar categoriasCount retornados do Banco:", err.Error())
+        } 
     }
 
     fmt.Printf("\nCategorias atualizadas!\n")
@@ -356,6 +399,7 @@ func main() {
 
     router.HandleFunc("/categorias/", GetCategorias).Methods("GET") // JSON com todas as categorias
     router.HandleFunc("/categorias/{id}", GetUMACategoria).Methods("GET") // devolve apenas uma categoria
+    router.HandleFunc("/categorias/", PostDenuncia).Methods("POST") // adiciona nova categoria
 
     // Não retorna nem envia nada, apenas atualiza o arquivo tabela.json aqui no server [util para teste]
     router.HandleFunc("/categorias/server", CriaArquivoJSON) 
