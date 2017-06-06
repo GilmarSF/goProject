@@ -19,7 +19,7 @@ type defaultContext struct{
 	Title string
 	ErrorMsg string
 	SuccessMsg string
-	Usuario string
+//	Usuario string
 }
 
 var themeName  = getThemeName()
@@ -35,13 +35,14 @@ func serveWeb () {
 	http.HandleFunc("/css/", serveResource)
 	http.HandleFunc("/js/", serveResource)
 
-	gorillaRoute.HandleFunc("/api/{uri}", api).Methods("GET")
-	gorillaRoute.HandleFunc("/api/{uri}", api).Methods("POST")
+//	gorillaRoute.HandleFunc("/api/{uri}", api).Methods("GET")
+//	gorillaRoute.HandleFunc("/api/{uri}", api).Methods("POST")
 
 	http.Handle("/", gorillaRoute)
 	http.ListenAndServe(":80", nil)
 }
 
+/*
 func api(w http.ResponseWriter, r *http.Request) {
 	log.Println("CHAMOU a API!!!!")
 	login := r.FormValue("login")
@@ -53,15 +54,13 @@ func api(w http.ResponseWriter, r *http.Request) {
 	} 
 	staticPage := staticPages.Lookup(page_alias + ".html")
 
-
 	context := defaultContext{}
 	context.Usuario = login
 	context.Title = "ttt"
 	
-
 	staticPage.Execute(w, context) 
 }
-
+*/
 func serveContent(w http.ResponseWriter, r *http.Request) {
 	urlParams := mux.Vars(r)
 	page_alias := urlParams["page_alias"]

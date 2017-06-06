@@ -1,79 +1,80 @@
 package main
 
 import (
-	_ "github.com/denisenkom/go-mssqldb"
 	"database/sql"
- 	"log"
- 	"fmt"
- 	//"flag"
- 	"net/http"
+	"fmt"
+	"log"
+
+	_ "github.com/denisenkom/go-mssqldb"
+	//"flag"
+	"net/http"
 )
 
 var name string
-var	peso = 68
-
+var peso = 68
 
 func main() {
-	connectionDB() // inicia conexão com o azure
+
 	connectionHTTP() // chama função servidor http
+	connectionDB()   // inicia conexão com o azure
 }
 
 func connectionDB() {
-	
-    // ABRINDO CONEXÃO E TESTANDO CONEXÃO COM PING
-    log.Println("Main:")
 
-    log.Println("Opening")
+	// ABRINDO CONEXÃO E TESTANDO CONEXÃO COM PING
+	log.Println("Main:")
+
+	log.Println("Opening")
 
 	// Banco Local
-    //db, err := sql.Open("mssql", "server=WARRIOR\\SQLEXPRESS;Initial Catalog=dbo;user id=sa;password=123456;port=1433")
-    
+	//db, err := sql.Open("mssql", "server=WARRIOR\\SQLEXPRESS;Initial Catalog=dbo;user id=sa;password=123456;port=1433")
+
 	// Banco no azure do Zé
 	db, err := sql.Open("mssql", "server=pwbt.database.windows.net;user id=admin-jose;password=123abc!@#;database=PWBT;port=1433")
 
-    if err != nil {
-        log.Println("Open Failed: ", err.Error())
-    }
+	if err != nil {
+		log.Println("Open Failed: ", err.Error())
+	}
 
-    log.Println("Opened")
+	log.Println("Opened")
 
-    log.Println("Pinging")
-    
-    err = db.Ping();
-    if err != nil {
-        log.Println("Failed to ping: ", err.Error())
-    }
+	log.Println("Pinging")
 
-    log.Println("Pinged")
-	
+	err = db.Ping()
+	if err != nil {
+		log.Println("Failed to ping: ", err.Error())
+	}
+
+	log.Println("Pinged")
+
 	// db.Query usado para comandos no Banco
 	rows, err := db.Query("select Nome from [dbo].[tbPessoa] where Peso=?", peso)
 	//rows, err := db.Query("CREATE TABLE JoseDB.dbo.TestTable (ColA INT PRIMARY KEY, ColB INT NOT NULL)")
 	if err != nil {
-	        log.Fatal(err)
+		log.Fatal(err)
 	}
 
 	defer rows.Close() // fecha o comando Query
-	defer db.Close() // fecha conexão com o Banco
+	defer db.Close()   // fecha conexão com o Banco
 	//fmt.Println(rows)
-	
+
 	// rows.Next usado para varrer o objeto 'rows' e pegar os valores retornados da Query
 	for rows.Next() {
-	        
-	        if err := rows.Scan(&name); err != nil {
-	                log.Fatal(err)
-	        }
-	        fmt.Printf("%s pesa %d\n", name, peso)
+
+		if err := rows.Scan(&name); err != nil {
+			log.Fatal(err)
+		}
+		fmt.Printf("%s pesa %d\n", name, peso)
 	}
 	if err := rows.Err(); err != nil {
-	        log.Fatal(err)
+		log.Fatal(err)
 	}
-	
+
 	fmt.Printf("bye\n")
 }
 
 func connectionHTTP() {
-	http.HandleFunc("/", serveHome) // Pagina home (localhost:80/)
+	http.HandleFunc("/", serveHome)           // Pagina home (localhost:80/)
 	http.HandleFunc("/contato", serveContato) // (localhost:80/contato)
 
 	http.ListenAndServe(":80", nil) // usando porta 80, pode ser 8080, apenas alterar
@@ -89,7 +90,7 @@ func serveContato(w http.ResponseWriter, r *http.Request) {
 
 // Sujeira =)
 
-	/*
+/*
 	stmt, err := db.Prepare("select 1, 'abc'")
 	if err != nil {
 		log.Fatal("Prepare failed:", err.Error())
@@ -105,15 +106,14 @@ func serveContato(w http.ResponseWriter, r *http.Request) {
 	}
 	fmt.Printf("somenumber:%d\n", somenumber)
 	fmt.Printf("somechars:%s\n", somechars)
-	*/
+*/
 
+/*connString := fmt.Sprintf("server=%s;user id=%s;password=%s;port=%d", *server, *user, *password, *port)
+if *debug {
+	fmt.Printf(" connString:%s\n", connString)
+}*/
 
-	/*connString := fmt.Sprintf("server=%s;user id=%s;password=%s;port=%d", *server, *user, *password, *port)
-	if *debug {
-		fmt.Printf(" connString:%s\n", connString)
-	}*/
-
-	/*
+/*
 	flag.Parse() // parse the command line args
 
 	if *debug {
@@ -122,9 +122,9 @@ func serveContato(w http.ResponseWriter, r *http.Request) {
 		fmt.Printf(" server:%s\n", *server)
 		fmt.Printf(" user:%s\n", *user)
 	}
-	*/
+*/
 
-	/*
+/*
 
 var debug = flag.Bool("debug", false, "enable debugging")
 var password = flag.String("password", "123abc!@#", "the database password")
@@ -141,9 +141,9 @@ var user = flag.String("user", "admin-jose", "the database user")
 	}
 
 	defer db.Close()
-	
+
 	err = db.Ping()
     if err != nil {
         log.Fatal(err)
     }
-    */
+*/

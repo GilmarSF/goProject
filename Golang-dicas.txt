@@ -1,4 +1,4 @@
-https://www.youtube.com/watch?v=fQVYSeMmdIc (golang web formular
+﻿https://www.youtube.com/watch?v=fQVYSeMmdIc (golang web formular
 
 http://stackoverflow.com/questions/39058823/how-to-use-delve-debugger-in-visual-studio-code (active debug VS code)
 
@@ -9,6 +9,10 @@ http://go-database-sql.org/accessing.html (como conectar no mysql)
 http://www.programering.com/a/MzM3UTMwATk.html (banco de dados)
 
 https://astaxie.gitbooks.io/ (tudo sobre go)
+
+https://mschoebel.info/2014/03/09/snippet-golang-webapp-login-logout/ (autenticando login)
+
+https://www.thepolyglotdeveloper.com/2016/07/create-a-simple-restful-api-with-golang/ (rest example)
 
 Framework: beego.me
 
@@ -65,9 +69,28 @@ pass: 1241ca14
 funcionou
 go get github.com/denisenkom/go-mssqldb
 go get github.com/gorilla/mux
-go get github.com/derekparker/delve/cmd/dlv (usado com VS code)
+go get github.com/derekparker/delve/cmd/dlv (DEBUG para VS code)
 
 criar as pastas dos projetos a partir do diretorio PATH
+
+--------------------------------------------------------------------
+// selects para o Projeto
+
+SELECT l.cidade, l.regiao, c.categoria 
+FROM tab_denuncia d 
+JOIN tab_localidade l ON d.localidade = l.id
+JOIN tab_categoria c ON d.categoria = c.id
+WHERE d.categoria = 2
+
+SELECT COUNT(*)
+from tab_denuncia
+where categoria = 1
+
+SELECT COUNT(*)
+from tab_denuncia
+where localidade = 2
+
+-----------------------------------------------------------------------
 
 Help GIT
 git clone [endereço] shift + insert
@@ -94,3 +117,5 @@ git checkout arquivo (ctrl+z)
 git reset HEAD (volta o commit)
 git chechout -b nome (cria branch)
 git checkout -D nome (delete branch)
+
+https://tutorialedge.net/post/golang/creating-restful-api-with-golang/

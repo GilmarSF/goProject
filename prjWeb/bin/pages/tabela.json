@@ -1,0 +1,14 @@
+{
+
+  "cols": [
+        {"label":"Denuncia","type":"string"},
+        {"label":"Quantidade","type":"number"}
+      ],
+  "rows": [
+        {"c":[{"v":"Assalto"},{"v":20}]},
+        {"c":[{"v":"Abuso Sexual"},{"v":40}]},
+        {"c":[{"v":"Transito"},{"v":60}]},
+        {"c":[{"v":"Violencia"},{"v":80}]},
+        {"c":[{"v":"Assassinato"},{"v":10}]}
+      ]
+}

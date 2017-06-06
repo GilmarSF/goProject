@@ -1,0 +1,28 @@
+
+<!DOCTYPE html>
+<html lang="en">
+{{template "_head.html" .}}
+<body>
+
+<div class="container">
+
+    {{template "_mainmenu.html"}}
+
+    <div class="jumbotron">
+        <form action="/home">
+            Código: <input type="text" name="Codigo" value="{{.Codigo}}">
+            <br><br>
+            Nome: <input type="text" name="nome" value="{{.Nome}}">
+            <br><br>
+            E-mail: <input type="text" name="email" value="{{.Email}}">
+            <br><br><br>
+            <input type="submit" value="Consultar">
+        </form>
+    </div>
+
+    {{template "_foot.html"}}
+
+</div> <!-- /container -->
+
+</body>
+</html>
