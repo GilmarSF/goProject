@@ -65,7 +65,7 @@ var countCategoria int
 func GetUsuario(w http.ResponseWriter, req *http.Request) {
 
     // Um aviso qualquer que será impresso no "prompt"
-    fmt.Printf("\nGet Usuario\n") 
+    log.Printf("Get Usuario") 
 
     // Salva o 'id' (valor) passado na requisição
     params := mux.Vars(req) 
@@ -92,14 +92,14 @@ func GetUsuario(w http.ResponseWriter, req *http.Request) {
  
 // traz a cadastros toda. Todas todas Usuarios do array 'cadastros'
 func GetCadastros(w http.ResponseWriter, req *http.Request) {
-    fmt.Printf("\nGet cadastros\n") 
+    log.Printf("Get cadastros") 
     json.NewEncoder(w).Encode(cadastros) //correto cadastros
 }
 
 // Adicona mais uma denuncia
 func PostDenuncia(w http.ResponseWriter, req *http.Request){
 
-    fmt.Printf("\nPost Nova Denuncia\n") 
+    log.Printf("Post Nova Denuncia") 
     var novaD NovaDenuncia
     
     _ = json.NewDecoder(req.Body).Decode(&novaD)
@@ -125,7 +125,7 @@ func PostDenuncia(w http.ResponseWriter, req *http.Request){
 // Adiciona mais um Usuario na tab_usuario
 func PostUsuario(w http.ResponseWriter, req *http.Request) {
 
-    fmt.Printf("\nPost Usuario\n") 
+    log.Printf("Post Usuario") 
     var usuario Usuario
     
     _ = json.NewDecoder(req.Body).Decode(&usuario)
@@ -151,7 +151,7 @@ func PostUsuario(w http.ResponseWriter, req *http.Request) {
 // Deleta o usuario da tab_usuario de acordo com o ID passado
 func DeleteUsuario(w http.ResponseWriter, req *http.Request) {
 
-    fmt.Printf("\nDelete Usuario\n") 
+    log.Printf("Delete Usuario") 
     params := mux.Vars(req) // salva em 'params' os dados passados na url
 
     db, err := sql.Open("mssql", "server=pwbt.database.windows.net;user id=admin-jose;password=123abc!@#;database=PWBT;port=1433")
@@ -178,7 +178,7 @@ func CriaArquivoJSON(w http.ResponseWriter, req *http.Request){
     // Busca no banco de dados todas as categorias e os totais de reclamações de novo
     // Assim toda vez que chamar essa func os dados estarão sempre att 
     AtualizaCategorias()
-    fmt.Printf("\nTabela.json atualizada\n") 
+    log.Printf("Tabela.json atualizada") 
     
     // Lê todo conteudo do arquivo default.json e salva em 'jsonOut'
     jsonOut, err := ioutil.ReadFile("default.json")
@@ -241,7 +241,7 @@ func CriaArquivoJSON(w http.ResponseWriter, req *http.Request){
 // função para enviar apenas uma categoria com o total por regiao
 func GetUMACategoria(w http.ResponseWriter, req *http.Request) {
     // OBSERVAÇÂO: comentarios de como funciona esta na 'func GetUsuario'
-    fmt.Printf("\nGet uma Categoria\n") 
+    log.Printf("Get uma Categoria") 
     params := mux.Vars(req) 
     var categoriaFound []CategoriaEach
     for _, item := range categoriasRegiao { 
@@ -254,7 +254,7 @@ func GetUMACategoria(w http.ResponseWriter, req *http.Request) {
 
 // envia os dados das categorias via GET
 func GetCategorias(w http.ResponseWriter, req *http.Request){
-    fmt.Printf("\nGet categorias\n") 
+    log.Printf("Get categorias") 
     json.NewEncoder(w).Encode(categorias)
 }
 
@@ -304,7 +304,7 @@ func AtualizaUsuarios() {
         countBanco, _ = strconv.Atoi(addUsuario.ID) 
     }
 
-    fmt.Printf("\nUsuarios atualizados!\n")
+    log.Printf("Usuarios atualizados!")
 }
 
 // Atualiza a struct Categorias com os dados do Banco
@@ -382,7 +382,7 @@ func AtualizaCategorias() {
         } 
     }
 
-    fmt.Printf("\nCategorias atualizadas!\n")
+    log.Printf("Categorias atualizadas!")
 }
 
 func main() {
