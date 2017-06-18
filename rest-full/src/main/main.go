@@ -80,8 +80,9 @@ func GetUsuario(w http.ResponseWriter, req *http.Request) {
         if item.ID == params["id"] { 
 
             // Quando encontrado, converte a Struct 'item' para o 
-            // formato 'JSON' e envia via HTTP na porta :8080
+            // formato 'JSON' e envia via REST
             json.NewEncoder(w).Encode(item) 
+            // sai da Func
             return 
         }
     }
@@ -98,13 +99,17 @@ func GetCadastros(w http.ResponseWriter, req *http.Request) {
 
 // Adicona mais uma denuncia
 func PostDenuncia(w http.ResponseWriter, req *http.Request){
-    //{"categoria":"4","localidade":"2"}
+    // modelo que deve enviado
+    // {"categoria":"4","localidade":"2"}
     log.Printf("Post Nova Denuncia") 
     var novaD NovaDenuncia
     
+    // grava em 'novaD' os dados enviados
     _ = json.NewDecoder(req.Body).Decode(&novaD)
+    // imprime no terminal os valores recebidos
     fmt.Println(novaD)
-    countCategoria++ // usado para sempre o numero do 'id' ser id+1
+    // usado para sempre o numero do 'id' ser id+1
+    countCategoria++ 
 
     db, err := sql.Open("mssql", "server=pwbt.database.windows.net;user id=admin-jose;password=123abc!@#;database=PWBT;port=1433")
     if err != nil {
@@ -117,8 +122,9 @@ func PostDenuncia(w http.ResponseWriter, req *http.Request){
     }
     defer rows.Close() // fecha o comando Query
     defer db.Close()   // fecha conexão com o Banco
+    // atualiza struct no banco
+    AtualizaCategorias() 
     
-    AtualizaCategorias() // atualiza struct no banco
     //json.NewEncoder(w).Encode(categorias)
 }
 

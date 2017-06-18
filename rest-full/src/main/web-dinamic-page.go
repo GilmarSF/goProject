@@ -102,7 +102,7 @@ func atualizaJSON(){
 	//}
 
 	//////////////////////////////////////// rotina para escrever nos arquivos
-
+	// mudar o path !
 	path := "B:/go/Github-faculdade/goProject/rest-full/bin/pages/"
 	// arquivo default.json com o formato padrão do JSON que a pagina lê
 	jsonOut, err := ioutil.ReadFile(path+"default.json")
@@ -142,6 +142,7 @@ func atualizaJSON(){
     }
     // Mesma rotina acima, porem agora separado as categorias por região
     for _, item := range categEach { 
+    	// Para comparar se os nomes são iguais deixo os dois em CAIXA ALTO e comparo.
         if strings.ToUpper(item.Nome) == strings.ToUpper(page_alias) { 
             //categoriaFound = append(categoriaFound,item)
             //log.Println(item.ID, item.Nome, item.Regiao, item.Total)
