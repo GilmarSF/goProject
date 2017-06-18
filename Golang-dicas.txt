@@ -1,4 +1,6 @@
-﻿https://www.youtube.com/watch?v=fQVYSeMmdIc (golang web formular
+estudar Jquery.ajax
+
+https://www.youtube.com/watch?v=fQVYSeMmdIc (golang web formular
 
 http://stackoverflow.com/questions/39058823/how-to-use-delve-debugger-in-visual-studio-code (active debug VS code)
 
