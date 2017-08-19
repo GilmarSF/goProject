@@ -1,0 +1,13 @@
+{
+          "cols": [
+                {"label":"Denuncia","type":"string"},
+                {"label":"Quantidade","type":"number"}
+              ],
+          "rows": [
+                {"c":[{"v":"Categoria"},{"v":00}]},
+                {"c":[{"v":"Categoria"},{"v":00}]},
+                {"c":[{"v":"Categoria"},{"v":00}]},
+                {"c":[{"v":"Categoria"},{"v":00}]},
+                {"c":[{"v":"Categoria"},{"v":00}]}
+              ]
+        }
