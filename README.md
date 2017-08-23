@@ -1,2 +1,2 @@
 # goProject
-Projeto do terceiro semestre
+Projeto DenunciApp desenvolvido com Golang
