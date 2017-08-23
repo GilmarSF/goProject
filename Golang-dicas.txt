@@ -2,15 +2,15 @@ https://www.youtube.com/watch?v=fQVYSeMmdIc (golang web formular
 
 http://stackoverflow.com/questions/39058823/how-to-use-delve-debugger-in-visual-studio-code (active debug VS code)
 
-go get github.com/derekparker/delve/cmd/dlv (To install debug at VS code)
-
 http://go-database-sql.org/accessing.html (como conectar no mysql)
 
 http://www.programering.com/a/MzM3UTMwATk.html (banco de dados)
 
 https://astaxie.gitbooks.io/ (tudo sobre go)
 
-Framework: beego.me
+https://mschoebel.info/2014/03/09/snippet-golang-webapp-login-logout/ (autenticando login)
+
+https://www.thepolyglotdeveloper.com/2016/07/create-a-simple-restful-api-with-golang/ (rest example)
 
 github.com/avelino/awesome-go
 golangbr.org
@@ -20,42 +20,15 @@ http://www.golang-book.com/books/intro
 Video aula web go
 https://www.youtube.com/watch?v=_b-9kcq-xmA&list=PLY2ogieTReHz8T8mf5RfXxHOPNjhUpmyv
 
-Install sublime for go
-http://www.webseekerz.com/blog/golang-editor-sublime-text-3.html
-https://www.youtube.com/watch?v=IjXgWmSR9Ys
-
 SUBLIME 3 (Ctrl + " em seguida cole esta linha abaixo e de enter)
 import urllib.request,os,hashlib; h = 'df21e130d211cfc94d9b0905775a7c0f' + '1e3d39e33b79698005270310898eea76'; pf = 'Package Control.sublime-package'; ipp = sublime.installed_packages_path(); urllib.request.install_opener( urllib.request.build_opener( urllib.request.ProxyHandler()) ); by = urllib.request.urlopen( 'http://packagecontrol.io/' + pf.replace(' ', '%20')).read(); dh = hashlib.sha256(by).hexdigest(); print('Error validating download (got %s instead of %s), please try manual install' % (dh, h)) if dh != h else open(os.path.join( ipp, pf), 'wb' ).write(by) 
 
 COMANDOS GO
 
-go env
-set GOARCH=amd64
-set GOBIN=c:\Go\Projects\code01\bin
-set GOEXE=.exe
-set GOHOSTARCH=amd64
-set GOHOSTOS=windows
-set GOOS=windows
-set GOPATH=c:\Go\Projects\code01
-set GORACE=
-set GOROOT=C:\Go
-set GOTOOLDIR=C:\Go\pkg\tool\windows_amd64
-set GCCGO=gccgo
-set CC=gcc
-set GOGCCFLAGS=-m64 -mthreads -fmessage-length=0
-set CXX=g++
-set CGO_ENABLED=1
-set PKG_CONFIG=pkg-config
-set CGO_CFLAGS=-g -O2
-set CGO_CPPFLAGS=
-set CGO_CXXFLAGS=-g -O2
-set CGO_FFLAGS=-g -O2
-set CGO_LDFLAGS=-g -O2
-
 DADOS para conectar no banco do Ze azure
 pwbt.database.windows.net
 user: admin-jose
-pass: #123abc!@
+pass: 123abc!@#
 
 mysql
 br-cdbr-azure-south-b.cloudapp.net
@@ -65,9 +38,27 @@ pass: 1241ca14
 funcionou
 go get github.com/denisenkom/go-mssqldb
 go get github.com/gorilla/mux
-go get github.com/derekparker/delve/cmd/dlv (usado com VS code)
+go get github.com/derekparker/delve/cmd/dlv (DEBUG para VS code)
 
-criar as pastas dos projetos a partir do diretorio PATH
+
+--------------------------------------------------------------------
+// selects para o Projeto
+
+SELECT l.cidade, l.regiao, c.categoria 
+FROM tab_denuncia d 
+JOIN tab_localidade l ON d.localidade = l.id
+JOIN tab_categoria c ON d.categoria = c.id
+WHERE d.categoria = 2
+
+SELECT COUNT(*)
+from tab_denuncia
+where categoria = 1
+
+SELECT COUNT(*)
+from tab_denuncia
+where localidade = 2
+
+-----------------------------------------------------------------------
 
 Help GIT
 git clone [endereço] shift + insert
@@ -94,3 +85,5 @@ git checkout arquivo (ctrl+z)
 git reset HEAD (volta o commit)
 git chechout -b nome (cria branch)
 git checkout -D nome (delete branch)
+
+https://tutorialedge.net/post/golang/creating-restful-api-with-golang/
