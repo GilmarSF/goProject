@@ -1,419 +1,327 @@
 // Todo codigo em Go precisa iniciar com este package
 package main
- 
- // Importa todas as bibliotecas que serão utilizadas no código
+
+// Importa todas as bibliotecas que serão utilizadas no código
 import (
 
-    // bibliotecas Nativas do Golang
-    "encoding/json"
-    "strconv" 
-    "log"
-    "net/http"
+	// bibliotecas Nativas do Golang
+	"bytes"
+	"database/sql"
+	"encoding/json"
 	"fmt"
-    "database/sql"
-    "io/ioutil"
-    "bytes"
+	"io/ioutil"
+	"log"
+	"net/http"
 
-    // Pode ser usado bibliotecas não nativas 
-    // /gorilla/mux para o servidor HTTP
-    // /denisenkom/go-mssqldb para a comunicação com Banco SQLServer
-    "github.com/gorilla/mux"
-    _ "github.com/denisenkom/go-mssqldb"
+	// Pode ser usado bibliotecas não nativas
+	// /gorilla/mux para o servidor HTTP
+	// /denisenkom/go-mssqldb para a comunicação com Banco SQLServer
+	_ "github.com/denisenkom/go-mssqldb"
+	"github.com/gorilla/mux"
 )
- 
+
 // Struct Principal criada para armazenar os dados retornados do Banco de dados
 // Structs são mais comuns para converter para JSON em Golang
 type Usuario struct {
 
-    // "omitempty", quando usado, omite este atributo caso seja 'null'
-    ID      string  `json:"id,omitempty"`
-    Nome    string  `json:"nome,omitempty"`
-    Email   string  `json:"email,omitempty"`
-    Senha   string  `json:"senha,omitempty"`
+	// "omitempty", quando usado, omite este atributo caso seja 'null'
+	ID    string `json:"id,omitempty"`
+	Nome  string `json:"nome,omitempty"`
+	Email string `json:"email,omitempty"`
+	Senha string `json:"senha,omitempty"`
 }
 
-type CategoriaFull struct{
-    ID      string  `json:"id,omitempty"`
-    Nome    string  `json:"nome,omitempty"`
-    Total   string  `json:"total,omitempty"`
+type CategoriaFull struct {
+	ID    string `json:"id,omitempty"`
+	Nome  string `json:"nome,omitempty"`
+	Total string `json:"total,omitempty"`
 }
 
-type CategoriaEach struct{
-    ID      string `json:"id,omitempty"`
-    Nome    string `json:"nome,omitempty"`
-    Regiao  string `json:"regiao,omitempty"`
-    Total   string `json:"total,omitempty"`
+type CategoriaEach struct {
+	ID     string `json:"id,omitempty"`
+	Nome   string `json:"nome,omitempty"`
+	Regiao string `json:"regiao,omitempty"`
+	Total  string `json:"total,omitempty"`
 }
 
-type NovaDenuncia struct{
-    Categoria string    `json:"categoria,omitempty"`
-    Localidade string   `json:"localidade,omitempty"`
+type NovaDenuncia struct {
+	Categoria  string `json:"categoria,omitempty"`
+	Localidade string `json:"localidade,omitempty"`
 }
 
 /* VARIAVEIS GLOBAIS PODEM SER USADAS EM QUALQUER PARTE DO CÓDiGO*/
 // array para salvar os Usuarios
-var cadastros []Usuario 
+var cadastros []Usuario
+
 // array usado para enviar o total de cada categoria
 var categorias []CategoriaFull
+
 // array usado para enviar o total de denuncias por regiao
-var categoriasRegiao []CategoriaEach
+var categoriasPorRegiao []CategoriaEach
+
 // Usado para armazenar o ultimo 'id' do banco de dados
-var countBanco int 
-var countCategoria int 
- 
+var countBanco int
+var proximoIdParaGravarNoBanco int
+
 // Função utilizada enviar apenas um Usuario via Rest
 func GetUsuario(w http.ResponseWriter, req *http.Request) {
 
-    // Um aviso qualquer que será impresso no "prompt"
-    log.Printf("Get Usuario") 
+	// Um aviso qualquer que será impresso no "prompt"
+	log.Printf("Get Usuario")
 
-    // Salva o 'id' (valor) passado na requisição
-    params := mux.Vars(req) 
+	// Salva o 'id' (valor) passado na requisição
+	params := mux.Vars(req)
 
-    // For usado para varrer todos os Usuarios que estão salvos no Array 'cadastros'
-    // 'range' significo por todo o array
-    // Neste for esta sendo criado uma Struct 'item' com os dados do Usuario que possuir o mesmo ID da requisição
-    // o sinal [ := ] é usado para criar uma nova variavel do tipo do valor que será adicionado a ela
-    for _, item := range cadastros { 
+	// For usado para varrer todos os Usuarios que estão salvos no Array 'cadastros'
+	// 'range' significo por todo o array
+	// Neste for esta sendo criado uma Struct 'item' com os dados do Usuario que possuir o mesmo ID da requisição
+	// o sinal [ := ] é usado para criar uma nova variavel do tipo do valor que será adicionado a ela
+	for _, item := range cadastros {
 
-        // Verifica em cada Usuario do array 'cadastros' se o ID é igual ao id passado na requisição
-        if item.ID == params["id"] { 
+		// Verifica em cada Usuario do array 'cadastros' se o ID é igual ao id passado na requisição
+		if item.ID == params["id"] {
 
-            // Quando encontrado, converte a Struct 'item' para o 
-            // formato 'JSON' e envia via REST
-            json.NewEncoder(w).Encode(item) 
-            // sai da Func
-            return 
-        }
-    }
+			// Quando encontrado, converte a Struct 'item' para o
+			// formato 'JSON' e envia via REST
+			json.NewEncoder(w).Encode(item)
+			// sai da Func
+			return
+		}
+	}
 
-    // Caso não encontrar, envia um JSON vazio
-    json.NewEncoder(w).Encode(&Usuario{}) 
+	// Caso não encontrar, envia um JSON vazio
+	json.NewEncoder(w).Encode(&Usuario{})
 }
- 
+
 // traz a cadastros toda. Todas todas Usuarios do array 'cadastros'
 func GetCadastros(w http.ResponseWriter, req *http.Request) {
-    log.Printf("Get cadastros") 
-    json.NewEncoder(w).Encode(cadastros) //correto cadastros
+	log.Printf("Get cadastros")
+	json.NewEncoder(w).Encode(cadastros) //correto cadastros
 }
 
 // Adicona mais uma denuncia
-func PostDenuncia(w http.ResponseWriter, req *http.Request){
-    // modelo que deve enviado
-    // {"categoria":"4","localidade":"2"}
-    log.Printf("Post Nova Denuncia") 
-    var novaD NovaDenuncia
-    
-    // grava em 'novaD' os dados enviados
-    _ = json.NewDecoder(req.Body).Decode(&novaD)
-    // imprime no terminal os valores recebidos
-    fmt.Println(novaD)
-    // usado para sempre o numero do 'id' ser id+1
-    countCategoria++ 
+func gravarNovaDenuncia(w http.ResponseWriter, req *http.Request) {
+	// modelo que deve enviado
+	// {"categoria":"4","localidade":"2"}
+	log.Printf("Post Nova Denuncia")
+	var novaD NovaDenuncia
 
-    db, err := sql.Open("mssql", "server=pwbt.database.windows.net;user id=admin-jose;password=123abc!@#;database=PWBT;port=1433")
-    if err != nil {
-        log.Println("Erro ao conectar com o Banco de dados:", err.Error())
-    }
+	// grava em 'novaD' os dados enviados
+	_ = json.NewDecoder(req.Body).Decode(&novaD)
+	// imprime no terminal os valores recebidos
+	fmt.Println(novaD)
 
-    rows, err := db.Query("INSERT into tab_denuncia (id, id_categoria, id_localidade) VALUES (?1, ?2, ?3)", countCategoria, novaD.Categoria, novaD.Localidade)
-    if err != nil {
-        log.Println("Erro no INSERT:", err.Error())
-    }
-    defer rows.Close() // fecha o comando Query
-    defer db.Close()   // fecha conexão com o Banco
-    // atualiza struct no banco
-    AtualizaCategorias() 
-    
-    //json.NewEncoder(w).Encode(categorias)
-}
+	bancoDeDados, erro := sql.Open("mssql", "server=pwbt.database.windows.net;user id=admin-jose;password=123abc!@#;database=PWBT;port=1433")
+	if erro != nil {
+		log.Println("erro ao conectar com o Banco de dados:", erro.Error())
+	}
 
-// Adiciona mais um Usuario na tab_usuario
-func PostUsuario(w http.ResponseWriter, req *http.Request) {
+	rows, erro := bancoDeDados.Query("INSERT into tab_denuncia (id, id_categoria, id_localidade) VALUES (?1, ?2, ?3)", proximoIdParaGravarNoBanco, novaD.Categoria, novaD.Localidade)
+	if erro != nil {
+		log.Println("erro no INSERT:", erro.Error())
+	} else {
+		proximoIdParaGravarNoBanco++
+	}
 
-    log.Printf("Post Usuario") 
-    var usuario Usuario
-    
-    _ = json.NewDecoder(req.Body).Decode(&usuario)
-    fmt.Println(usuario)
-    countBanco++ // usado para sempre o numero do 'id' ser id+1
+	defer rows.Close()         // fecha o comando Query
+	defer bancoDeDados.Close() // fecha conexão com o Banco
+	// atualiza struct no banco
+	atualizarCategorias()
 
-    db, err := sql.Open("mssql", "server=pwbt.database.windows.net;user id=admin-jose;password=123abc!@#;database=PWBT;port=1433")
-    if err != nil {
-        log.Println("Erro ao conectar com o Banco de dados:", err.Error())
-    }
-
-    rows, err := db.Query("INSERT INTO tab_usuario (id, nome, email, senha) VALUES (?1, ?2, ?3, ?4)", countBanco, usuario.Nome, usuario.Email, usuario.Senha) 
-    if err != nil {
-        log.Println("Erro no INSERT:", err.Error())
-    }
-    defer rows.Close() // fecha o comando Query
-    defer db.Close()   // fecha conexão com o Banco
-    
-    AtualizaUsuarios() // atualiza struct no banco
-    //json.NewEncoder(w).Encode(cadastros)
-}
-
-// Deleta o usuario da tab_usuario de acordo com o ID passado
-func DeleteUsuario(w http.ResponseWriter, req *http.Request) {
-
-    log.Printf("Delete Usuario") 
-    params := mux.Vars(req) // salva em 'params' os dados passados na url
-
-    db, err := sql.Open("mssql", "server=pwbt.database.windows.net;user id=admin-jose;password=123abc!@#;database=PWBT;port=1433")
-    if err != nil {
-        log.Println("Erro ao conectar com o Banco de dados:", err.Error())
-    }
-
-    del, _ := strconv.Atoi(params["id"]) // converte de String para Int
-    rows, err := db.Query("DELETE FROM tab_usuario WHERE id = ?1", del) 
-    if err != nil {
-        log.Println("Erro no DELETE:", err.Error())
-    }
-    defer rows.Close() // fecha o comando Query
-    defer db.Close()   // fecha conexão com o Banco
-    
-    AtualizaUsuarios() // atualiza struct no banco
-
-    json.NewEncoder(w).Encode(cadastros)
+	//json.NewEncoder(w).Encode(categorias)
 }
 
 // cria o arquivo tabela.json no server
-func CriaArquivoJSON(w http.ResponseWriter, req *http.Request){
+func CriaArquivoJSON(w http.ResponseWriter, req *http.Request) {
 
-    // Busca no banco de dados todas as categorias e os totais de reclamações de novo
-    // Assim toda vez que chamar essa func os dados estarão sempre att 
-    AtualizaCategorias()
-    log.Printf("Tabela.json atualizada") 
-    
-    // Lê todo conteudo do arquivo default.json e salva em 'jsonOut'
-    jsonOut, err := ioutil.ReadFile("default.json")
-    if err != nil {
-            fmt.Println(err)
-    }
+	// Busca no banco de dados todas as categorias e os totais de reclamações de novo
+	// Assim toda vez que chamar essa func os dados estarão sempre att
+	atualizarCategorias()
+	log.Printf("Tabela.json atualizada")
 
-    // for usado para varrer todos os dados Salvos no array d structs 'categorias'
-    // a cada dado encontrado, é sobrescrito no arquivo default.json
-    for _, item := range categorias { 
+	// Lê todo conteudo do arquivo default.json e salva em 'jsonOut'
+	jsonOut, erro := ioutil.ReadFile("default.json")
+	if erro != nil {
+		fmt.Println(erro)
+	}
 
-        // Salva em 'attCategoria' o conteudo copiado de 'default.json' 
-        // já com a palavra "Categoria" substituida por 'item.Nome'
-        // 'item' recebe do 'for' citado acima os dados da posição atual do array de struct
-        // Obs.: O numero 1 no final significa que é para alterar apenas a primeira
-        // palavra "Categoria encontrada", se estivesse 2 substituiria as 2 primeiras
-        // palavras "Categoria" encontrada, se estivesse -1 substituiria todas as palavras
-        // "Categoria" para a palavra salva no atual item.Nome
-        attCategoria := bytes.Replace(jsonOut, []byte("Categoria"), []byte(item.Nome), 1)
-        
-        // Nesta parte sera gravado todo o conteudo de attCategoria com a alteração acima
-        // no arquivo tabela.json
-        if err = ioutil.WriteFile("../../bin/pages/tabela.json", attCategoria, 0666); err != nil {
-            fmt.Println(err)
-        }
+	// for usado para varrer todos os dados Salvos no array d structs 'categorias'
+	// a cada dado encontrado, é sobrescrito no arquivo default.json
+	for _, item := range categorias {
 
-        // Lê todo conteudo do arquivo tabela.json e salva em 'jsonOut'
-        // a partir daqui cada alteração no arquivo 'tabela.json' o mesmo deve
-        // ser relido e salvo em 'jsonOut' para as proximas alterações não serem
-        // baseadas no arquivo 'default.json' 
-        jsonOut, err = ioutil.ReadFile("../../bin/pages/tabela.json")
-        if err != nil {
-            fmt.Println(err)
-        }  
+		// Salva em 'attCategoria' o conteudo copiado de 'default.json'
+		// já com a palavra "Categoria" substituida por 'item.Nome'
+		// 'item' recebe do 'for' citado acima os dados da posição atual do array de struct
+		// Obs.: O numero 1 no final significa que é para alterar apenas a primeira
+		// palavra "Categoria encontrada", se estivesse 2 substituiria as 2 primeiras
+		// palavras "Categoria" encontrada, se estivesse -1 substituiria todas as palavras
+		// "Categoria" para a palavra salva no atual item.Nome
+		attCategoria := bytes.Replace(jsonOut, []byte("Categoria"), []byte(item.Nome), 1)
 
-        // Faz o mesmo descrito acima para o numero total de incidentes
-        // Obs.: apesar de ser escrito no formato string
-        // o Javascript na hora de ler entendera que é um numero INT pois não tem " "
-        attTotal := bytes.Replace(jsonOut, []byte("0"), []byte(item.Total), 1)
-        if err = ioutil.WriteFile("../../bin/pages/tabela.json", attTotal, 0666); err != nil {
-            fmt.Println(err)
-        }
+		// Nesta parte sera gravado todo o conteudo de attCategoria com a alteração acima
+		// no arquivo tabela.json
+		if erro = ioutil.WriteFile("../../bin/pages/tabela.json", attCategoria, 0666); erro != nil {
+			fmt.Println(erro)
+		}
 
-        jsonOut, err = ioutil.ReadFile("../../bin/pages/tabela.json")
-        if err != nil {
-                fmt.Println(err)
-        }   
-    }
+		// Lê todo conteudo do arquivo tabela.json e salva em 'jsonOut'
+		// a partir daqui cada alteração no arquivo 'tabela.json' o mesmo deve
+		// ser relido e salvo em 'jsonOut' para as proximas alterações não serem
+		// baseadas no arquivo 'default.json'
+		jsonOut, erro = ioutil.ReadFile("../../bin/pages/tabela.json")
+		if erro != nil {
+			fmt.Println(erro)
+		}
 
-    out, _ := ioutil.ReadFile("tabela.json")
-    //if err != nil {
-    //    fmt.Println(err)
-    //}
+		// Faz o mesmo descrito acima para o numero total de incidentes
+		// Obs.: apesar de ser escrito no formato string
+		// o Javascript na hora de ler entendera que é um numero INT pois não tem " "
+		attTotal := bytes.Replace(jsonOut, []byte("0"), []byte(item.Total), 1)
+		if erro = ioutil.WriteFile("../../bin/pages/tabela.json", attTotal, 0666); erro != nil {
+			fmt.Println(erro)
+		}
 
-    //texto := []byte("conteudo")
-    //err = ioutil.WriteFile("../../bin/pages/teste.json.html", out, 0644)
-    //if err != nil {
-    //    fmt.Println(err)
-    //}
+		jsonOut, erro = ioutil.ReadFile("../../bin/pages/tabela.json")
+		if erro != nil {
+			fmt.Println(erro)
+		}
+	}
 
-    //fmt.Println(out)
-    json.NewEncoder(w).Encode(out)
+	out, _ := ioutil.ReadFile("tabela.json")
+	//if erro != nil {
+	//    fmt.Println(erro)
+	//}
+
+	//texto := []byte("conteudo")
+	//erro = ioutil.WriteFile("../../bin/pages/teste.json.html", out, 0644)
+	//if erro != nil {
+	//    fmt.Println(erro)
+	//}
+
+	//fmt.Println(out)
+	json.NewEncoder(w).Encode(out)
 }
 
 // função para enviar apenas uma categoria com o total por regiao
-func GetUMACategoria(w http.ResponseWriter, req *http.Request) {
-    // OBSERVAÇÂO: comentarios de como funciona esta na 'func GetUsuario'
-    log.Printf("Get uma Categoria") 
-    params := mux.Vars(req) 
-    var categoriaFound []CategoriaEach
-    for _, item := range categoriasRegiao { 
-        if item.ID == params["id"] { 
-            categoriaFound = append(categoriaFound,item)
-        }
-    }
-    json.NewEncoder(w).Encode(categoriasRegiao) 
-    //json.NewEncoder(w).Encode(categoriaFound) 
+func pegarUmaCategoria(w http.ResponseWriter, req *http.Request) {
+	// OBSERVAÇÂO: comentarios de como funciona esta na 'func GetUsuario'
+	log.Printf("Get uma Categoria")
+	params := mux.Vars(req)
+	var categoriaFound []CategoriaEach
+	for _, item := range categoriasPorRegiao {
+		if item.ID == params["id"] {
+			categoriaFound = append(categoriaFound, item)
+		}
+	}
+	//json.NewEncoder(w).Encode(categoriasPorRegiao)
+	json.NewEncoder(w).Encode(categoriaFound)
 }
 
 // envia os dados das categorias via GET
-func GetCategorias(w http.ResponseWriter, req *http.Request){
-    log.Printf("Get categorias") 
-    json.NewEncoder(w).Encode(categorias)
-}
-
-// Atualiza a struct Usuario com os dados do Banco
-func AtualizaUsuarios() {
-
-    // Inicia conexão com Banco de dados no Azure 
-    db, err := sql.Open("mssql", "server=pwbt.database.windows.net;user id=admin-jose;password=123abc!@#;database=PWBT;port=1433")
-    // Caso ocorrer algum erro na conexão, o ERRO será salvo em 'err'
-    // Caso não houver ERRO o retorno será vazio 'nil'
-    if err != nil {
-        log.Println("Erro ao conectar com o Banco de dados:", err.Error())
-    }
-
-    // db.Query usado para executar comandos no Banco
-    rows, err := db.Query("select id, nome, email, senha from tab_usuario") 
-    if err != nil {
-        log.Println("Erro no SELECT dos Usuarios:", err.Error())
-    }
-
-    // finaliza o comando para Query
-    defer rows.Close() 
-    // fecha conexão com o Banco
-    defer db.Close()   
-    
-    // Zera o Array antes de buscar novos dados no banco.
-    // Dessa forma evita dados repetidos
-    cadastros = cadastros[:0]
-
-    // rows.Next usado para varrer o objeto 'rows' e pegar os valores retornados da Query
-    for rows.Next() {
-        // Struct criada para receber os dados do banco de dados
-        // Uma Struct permite receber dados de diferentes tipos: String, Int ...
-        addUsuario := Usuario{} 
-
-        // rows.Scan varre o objeto rows e salva os valores na variaveis citadas abaixo.
-        // As variaveis são salvas na mesma ordem que são coletados do Banco de dados
-        if err := rows.Scan(&addUsuario.ID, &addUsuario.Nome, &addUsuario.Email, &addUsuario.Senha); err != nil { 
-            log.Println("Erro ao salvar os cadastros retornados do Banco:", err.Error())
-        }
-        
-        // adiciona na struct principal os dados do banco
-        // Sera está struct 'cadastros' que será convertida para o formato JSON
-        cadastros = append(cadastros, addUsuario)
-
-        // Pega o valor do ID do ultimo dado buscado no banco e converte de String para Int
-        countBanco, _ = strconv.Atoi(addUsuario.ID) 
-    }
-
-    log.Printf("Usuarios atualizados!")
+func pegarTodasCategorias(w http.ResponseWriter, req *http.Request) {
+	log.Printf("Get categorias")
+	json.NewEncoder(w).Encode(categorias)
 }
 
 // Atualiza a struct Categorias com os dados do Banco
-func AtualizaCategorias() {
-    
-    // Inicia conexão com Banco de dados no Azure 
-    db, err := sql.Open("mssql", "server=pwbt.database.windows.net;user id=admin-jose;password=123abc!@#;database=PWBT;port=1433")
-    // Caso ocorrer algum erro na conexão, o ERRO será salvo em 'err'
-    // Caso não houver ERRO o retorno será vazio 'nil'
-    if err != nil {
-        log.Println("Erro ao conectar com o Banco de dados:", err.Error())
-    }
+func atualizarCategorias() {
 
-    // Select traz todos os Nomes das categorias e as quantidades de denuncias de cada um
-    rowsFull, err := db.Query("SELECT d.id_categoria, c.categoria, COUNT(d.id_categoria) FROM tab_denuncia d JOIN tab_categoria c ON d.id_categoria = c.id GROUP BY d.id_categoria, c.categoria") 
-    if err != nil {
-        log.Println("Erro no SELECT das CategoriasFull:", err.Error())
-    }
+	// Inicia conexão com Banco de dados no Azure
+	bancoDeDados, erro := sql.Open("mssql", "server=pwbt.database.windows.net;user id=admin-jose;password=123abc!@#;database=PWBT;port=1433")
+	// Caso ocorrer algum erro na conexão, o erro será salvo em 'erro'
+	// Caso não houver erro o retorno será vazio 'nil'
+	if erro != nil {
+		log.Println("erro em atualizarCategorias(): ", erro.Error())
+	}
 
-    // select usado para trazer a Categoria e a quantidade de denuncias por regia
-    rowsEach, err := db.Query("SELECT d.id_categoria, c.categoria, l.regiao, COUNT(d.id_localidade) FROM tab_denuncia d JOIN tab_categoria c ON d.id_categoria = c.id JOIN tab_localidade l ON d.id_localidade = l.id GROUP BY d.id_localidade, d.id_categoria, c.categoria, l.regiao") 
-    if err != nil {
-        log.Println("Erro no SELECT das CategoriasCada:", err.Error())
-    }
-    // select apenas para trazer o valor do ultimo ID
-    rowsCount, err := db.Query("select MAX(id) from tab_denuncia") 
-    if err != nil {
-        log.Println("Erro no SELECT count categoria:", err.Error())
-    }
+	// Select traz todos os Nomes das categorias e as quantidades de denuncias de cada um
+	denuciasPorCategoria, erro := bancoDeDados.Query(`SELECT d.id_categoria, c.categoria, COUNT(d.id_categoria) 
+                                            FROM tab_denuncia d JOIN tab_categoria c 
+                                            ON d.id_categoria = c.id 
+                                            GROUP BY d.id_categoria, c.categoria`)
 
-    // finaliza o comando para Query
-    defer rowsFull.Close() 
-    defer rowsEach.Close()
-    defer rowsCount.Close()
-    // fecha conexão com o Banco
-    defer db.Close()   
-    
-    // Zera o Array antes de buscar novos dados no banco.
-    // Dessa forma evita dados repetidos
-    categorias = categorias[:0]
-    categoriasRegiao = categoriasRegiao[:0]
+	if erro != nil {
+		log.Println("erro no SELECT das CategoriasFull:", erro.Error())
+	}
 
-    // rowsFull.Next usado para varrer o objeto 'rowsFull' e pegar os valores retornados da Query
-    for rowsFull.Next() {
-        // Struct criada para receber os dados do banco de dados
-        // Uma Struct permite receber dados de diferentes tipos: String, Int ...
-        addCategoria := CategoriaFull{} 
+	// select usado para trazer a Categoria e a quantidade de denuncias por regiao
+	denuciasPorRegiao, erro := bancoDeDados.Query(`SELECT d.id_categoria, c.categoria, l.regiao, COUNT(d.id_localidade) 
+                                        FROM tab_denuncia d JOIN tab_categoria c 
+                                        ON d.id_categoria = c.id 
+                                        JOIN tab_localidade l 
+                                        ON d.id_localidade = l.id 
+                                        GROUP BY d.id_localidade, d.id_categoria, c.categoria, l.regiao`)
 
-        // rowsFull.Scan varre o objeto rowsFull e salva os valores na variaveis citadas abaixo.
-        // As variaveis são salvas na mesma ordem que são coletados do Banco de dados
-        if err := rowsFull.Scan(&addCategoria.ID, &addCategoria.Nome, &addCategoria.Total); err != nil { 
-            log.Println("Erro ao salvar as categoriasFull retornados do Banco:", err.Error())
-        }
-        
-        // adiciona na struct principal os dados do banco
-        // Sera está struct 'cadastros' que será convertida para o formato JSON
-        categorias = append(categorias, addCategoria)
+	if erro != nil {
+		log.Println("erro no SELECT das denunciasPorRegiao:", erro.Error())
+	}
+	// select apenas para trazer o valor do ultimo ID
+	// usado para um futuro POST
+	ultimoIDBanco, erro := bancoDeDados.Query("select MAX(id) from tab_denuncia")
+	if erro != nil {
+		log.Println("erro no SELECT count categoria:", erro.Error())
+	}
 
-        // Pega o valor do ID do ultimo dado buscado no banco e converte de String para Int
-    }
+	// finaliza o comando para Query
+	defer denuciasPorCategoria.Close()
+	defer denuciasPorRegiao.Close()
+	defer ultimoIDBanco.Close()
+	// fecha conexão com o Banco
+	defer bancoDeDados.Close()
 
-    for rowsEach.Next(){
-        addCategoria := CategoriaEach{}
-        if err := rowsEach.Scan(&addCategoria.ID, &addCategoria.Nome, &addCategoria.Regiao, &addCategoria.Total); err != nil{
-            log.Println("Erro ao salvar as categoriasEach retornados do Banco:", err.Error())
-        } 
+	// Zera o Array antes de buscar novos dados no banco.
+	// Dessa forma evita dados repetidos
+	categorias = categorias[:0]
+	categoriasPorRegiao = categoriasPorRegiao[:0]
 
-        categoriasRegiao = append(categoriasRegiao, addCategoria)
-    }
+	// denuciasPorCategoria.Next usado para varrer o objeto 'denuciasPorCategoria' e pegar os valores retornados da Query
+	for denuciasPorCategoria.Next() {
+		// Struct criada para receber os dados do banco de dados
+		// Uma Struct permite receber dados de diferentes tipos: String, Int ...
+		addCategoria := CategoriaFull{}
 
-    for rowsCount.Next(){
-        
-        if err := rowsCount.Scan(&countCategoria); err != nil{
-            log.Println("Erro ao salvar categoriasCount retornados do Banco:", err.Error())
-        } 
-    }
+		// denuciasPorCategoria.Scan varre o objeto denuciasPorCategoria e salva os valores na variaveis citadas abaixo.
+		// As variaveis são salvas na mesma ordem que são coletados do Banco de dados
+		if erro := denuciasPorCategoria.Scan(&addCategoria.ID, &addCategoria.Nome, &addCategoria.Total); erro != nil {
+			log.Println("erro ao salvar as categoriasFull retornados do Banco:", erro.Error())
+		}
 
-    log.Printf("Categorias atualizadas!")
+		// adiciona na struct principal os dados do banco
+		// Sera está struct 'cadastros' que será convertida para o formato JSON
+		categorias = append(categorias, addCategoria)
+
+		// Pega o valor do ID do ultimo dado buscado no banco e converte de String para Int
+	}
+
+	for denuciasPorRegiao.Next() {
+		addCategoria := CategoriaEach{}
+		if erro := denuciasPorRegiao.Scan(&addCategoria.ID, &addCategoria.Nome, &addCategoria.Regiao, &addCategoria.Total); erro != nil {
+			log.Println("erro ao salvar as categoriasEach retornados do Banco:", erro.Error())
+		}
+
+		categoriasPorRegiao = append(categoriasPorRegiao, addCategoria)
+	}
+
+	for ultimoIDBanco.Next() {
+
+		if erro := ultimoIDBanco.Scan(&proximoIdParaGravarNoBanco); erro != nil {
+			log.Println("erro ao salvar categoriasCount retornados do Banco:", erro.Error())
+		} else {
+			proximoIdParaGravarNoBanco++
+		}
+	}
+
+	log.Printf("Categorias atualizadas!")
 }
 
 func main() {
 
-    AtualizaUsuarios()   
-    AtualizaCategorias() 
-    router := mux.NewRouter()
+	atualizarCategorias()
+	router := mux.NewRouter()
 
-    // Caso queira trabalhar com cadastros
-    router.HandleFunc("/cadastros/", GetCadastros).Methods("GET") // JSON com todos os cadastros
-    router.HandleFunc("/cadastros/{id}", GetUsuario).Methods("GET") // JSON com apenas 1 cadastro
-    router.HandleFunc("/cadastros/", PostUsuario).Methods("POST") // JSON para receber o um novo usuario
-    router.HandleFunc("/cadastros/{id}", DeleteUsuario).Methods("DELETE") // JSON para deletar um usuario
+	router.HandleFunc("/categorias/", pegarTodasCategorias).Methods("GET")  // JSON com todas as categorias
+	router.HandleFunc("/categorias/{id}", pegarUmaCategoria).Methods("GET") // devolve apenas uma categoria
+	router.HandleFunc("/categorias/", gravarNovaDenuncia).Methods("POST")   // adiciona nova categoria
 
-    router.HandleFunc("/categorias/", GetCategorias).Methods("GET") // JSON com todas as categorias
-    router.HandleFunc("/categorias/{id}", GetUMACategoria).Methods("GET") // devolve apenas uma categoria
-    router.HandleFunc("/categorias/", PostDenuncia).Methods("POST") // adiciona nova categoria
-
-    // Não retorna nem envia nada, apenas atualiza o arquivo tabela.json aqui no server [util para teste]
-    router.HandleFunc("/categorias/api/{id}", CriaArquivoJSON).Methods("GET")
-    log.Fatal(http.ListenAndServe(":8080", router)) // Server na porta 8080 [ localhost:8080 ]
+	log.Fatal(http.ListenAndServe(":8080", router)) // Server na porta 8080 [ localhost:8080 ]
 }
