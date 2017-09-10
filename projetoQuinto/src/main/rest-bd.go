@@ -5,7 +5,6 @@ package main
 import (
 
 	// bibliotecas Nativas do Golang
-
 	"database/sql"
 	"encoding/json"
 	"fmt"
@@ -50,7 +49,6 @@ var denuncias []Denuncias
 var denunciasPorCategoria []DenunciasPorCategoria
 
 // Usado para armazenar o ultimo 'id' do banco de dados
-var countBanco int
 var proximoIdParaGravarNoBanco int
 
 // Adicona mais uma denuncia
@@ -61,7 +59,10 @@ func gravarNovaDenuncia(w http.ResponseWriter, req *http.Request) {
 	var novaD NovaDenuncia
 
 	// grava em 'novaD' os dados enviados
-	_ = json.NewDecoder(req.Body).Decode(&novaD)
+	erro := json.NewDecoder(req.Body).Decode(&novaD)
+	if erro != nil {
+		log.Println("erro em ao gravar em novaD: ", erro.Error())
+	}
 	// imprime no terminal os valores recebidos
 	fmt.Println(novaD)
 
@@ -70,7 +71,7 @@ func gravarNovaDenuncia(w http.ResponseWriter, req *http.Request) {
 		log.Println("erro ao conectar com o Banco de dados:", erro.Error())
 	}
 
-	rows, erro := bancoDeDados.Query(`INSERT into tab_denuncia (id, id_categoria, id_localidade) 
+	insert, erro := bancoDeDados.Query(`INSERT into tab_denuncia (id, id_categoria, id_localidade) 
 									VALUES (?1, ?2, ?3)`, proximoIdParaGravarNoBanco, novaD.Categoria, novaD.Localidade)
 	if erro != nil {
 		log.Println("erro no INSERT:", erro.Error())
@@ -78,7 +79,7 @@ func gravarNovaDenuncia(w http.ResponseWriter, req *http.Request) {
 		proximoIdParaGravarNoBanco++
 	}
 
-	defer rows.Close()         // fecha o comando Query
+	defer insert.Close()       // fecha o comando Query
 	defer bancoDeDados.Close() // fecha conexão com o Banco
 	// atualiza struct no banco
 	atualizarCategorias()
@@ -93,7 +94,7 @@ func pegarUmaCategoria(w http.ResponseWriter, req *http.Request) {
 	params := mux.Vars(req)
 	var categoriaEncontrada []DenunciasPorCategoria
 	for _, item := range denunciasPorCategoria {
-		if strings.ToLower(item.Nome) == strings.ToLower(params["id"]) {
+		if strings.ToLower(item.Nome) == strings.ToLower(params["uri"]) {
 			categoriaEncontrada = append(categoriaEncontrada, item)
 		}
 	}
@@ -201,9 +202,9 @@ func main() {
 	atualizarCategorias()
 	router := mux.NewRouter()
 
-	router.HandleFunc("/denuncias/", pegarTodasCategorias).Methods("GET")  // JSON com todas as categorias
-	router.HandleFunc("/denuncias/{id}", pegarUmaCategoria).Methods("GET") // devolve apenas uma categoria
-	router.HandleFunc("/denuncias/", gravarNovaDenuncia).Methods("POST")   // adiciona nova denuncia
+	router.HandleFunc("/denuncias/", pegarTodasCategorias).Methods("GET")   // JSON com todas as categorias
+	router.HandleFunc("/denuncias/{uri}", pegarUmaCategoria).Methods("GET") // devolve apenas uma categoria
+	router.HandleFunc("/denuncias/", gravarNovaDenuncia).Methods("POST")    // adiciona nova denuncia
 
 	log.Fatal(http.ListenAndServe(":8080", router)) // Server na porta 8080 [ localhost:8080 ]
 }
