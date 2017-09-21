@@ -7,20 +7,20 @@ import (
 	_ "github.com/denisenkom/go-mssqldb"
 )
 
-type Denuncias struct {
+type Denuncias_Struct struct {
 	ID    string `json:"id,omitempty"`
 	Nome  string `json:"nome,omitempty"`
 	Total string `json:"total,omitempty"`
 }
 
-type DenunciasPorCategoria struct {
+type DenunciasPorCategoria_Struct struct {
 	ID     string `json:"id,omitempty"`
 	Nome   string `json:"nome,omitempty"`
 	Regiao string `json:"regiao,omitempty"`
 	Total  string `json:"total,omitempty"`
 }
 
-type NovaDenuncia struct {
+type NovaDenuncia_Struct struct {
 	Categoria  string `json:"categoria,omitempty"`
 	Localidade string `json:"localidade,omitempty"`
 }
@@ -28,10 +28,10 @@ type NovaDenuncia struct {
 /* VARIAVEIS GLOBAIS PODEM SER USADAS EM QUALQUER PARTE DO CÓDiGO*/
 
 // array usado para enviar o total de cada categoria
-var denuncias []Denuncias
+var Denuncias []Denuncias_Struct
 
 // array usado para enviar o total de denuncias por regiao
-var denunciasPorCategoria []DenunciasPorCategoria
+var DenunciasPorCategoria []DenunciasPorCategoria_Struct
 
 // Usado para armazenar o ultimo 'id' do banco de dados
 var proximoIdParaGravarNoBanco int
@@ -49,8 +49,8 @@ func AtualizarDenuncias() {
 
 	// Zera o Array antes de buscar novos dados no banco.
 	// Dessa forma evita dados repetidos
-	denuncias = denuncias[:0]
-	denunciasPorCategoria = denunciasPorCategoria[:0]
+	Denuncias = Denuncias[:0]
+	DenunciasPorCategoria = DenunciasPorCategoria[:0]
 
 	// Select traz todos os Nomes das categorias e as quantidades de denuncias de cada um
 	retornoSelectBanco, erro := bancoDeDados.Query(`SELECT d.id_categoria, c.categoria, COUNT(d.id_categoria) 
@@ -66,7 +66,7 @@ func AtualizarDenuncias() {
 	for retornoSelectBanco.Next() {
 		// Struct criada para receber os dados do banco de dados
 		// Uma Struct permite receber dados de diferentes tipos: String, Int ...
-		addCategoria := Denuncias{}
+		addCategoria := Denuncias_Struct{}
 
 		// retornoSelectBanco.Scan varre o objeto retornoSelectBanco e salva os valores na variaveis citadas abaixo.
 		// As variaveis são salvas na mesma ordem que são coletados do Banco de dados
@@ -76,7 +76,7 @@ func AtualizarDenuncias() {
 
 		// adiciona na struct principal os dados do banco
 		// Sera está struct 'categorias' que será convertida para o formato JSON
-		denuncias = append(denuncias, addCategoria)
+		Denuncias = append(Denuncias, addCategoria)
 	}
 	log.Printf("Denuncias atualizadas")
 
@@ -105,12 +105,12 @@ func AtualizarDenuncias() {
 	defer bancoDeDados.Close()
 
 	for retornoSelectBanco.Next() {
-		addCategoria := DenunciasPorCategoria{}
+		addCategoria := DenunciasPorCategoria_Struct{}
 		if erro := retornoSelectBanco.Scan(&addCategoria.ID, &addCategoria.Nome, &addCategoria.Regiao, &addCategoria.Total); erro != nil {
 			log.Println("erro ao salvar as categoriasEach retornados do Banco:", erro.Error())
 		}
 
-		denunciasPorCategoria = append(denunciasPorCategoria, addCategoria)
+		DenunciasPorCategoria = append(DenunciasPorCategoria, addCategoria)
 	}
 	log.Printf("Denuncias por categorias atualizadas")
 

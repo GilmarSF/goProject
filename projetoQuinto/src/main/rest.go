@@ -5,13 +5,13 @@ package main
 import (
 
 	// bibliotecas Nativas do Golang
+	"bd"
 	"database/sql"
 	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
 	"strings"
-	"bd/bd"
 	// Pode ser usado bibliotecas não nativas
 	// /gorilla/mux para o servidor HTTP
 	// /denisenkom/go-mssqldb para a comunicação com Banco SQLServer
@@ -22,31 +22,12 @@ import (
 // Struct Principal criada para armazenar os dados retornados do Banco de dados
 // Structs são mais comuns para converter para JSON em Golang
 
-type Denuncias struct {
-	ID    string `json:"id,omitempty"`
-	Nome  string `json:"nome,omitempty"`
-	Total string `json:"total,omitempty"`
-}
-
-type DenunciasPorCategoria struct {
-	ID     string `json:"id,omitempty"`
-	Nome   string `json:"nome,omitempty"`
-	Regiao string `json:"regiao,omitempty"`
-	Total  string `json:"total,omitempty"`
-}
-
 type NovaDenuncia struct {
 	Categoria  string `json:"categoria,omitempty"`
 	Localidade string `json:"localidade,omitempty"`
 }
 
 /* VARIAVEIS GLOBAIS PODEM SER USADAS EM QUALQUER PARTE DO CÓDiGO*/
-
-// array usado para enviar o total de cada categoria
-var denuncias []Denuncias
-
-// array usado para enviar o total de denuncias por regiao
-var denunciasPorCategoria []DenunciasPorCategoria
 
 // Usado para armazenar o ultimo 'id' do banco de dados
 var proximoIdParaGravarNoBanco int
@@ -82,7 +63,7 @@ func gravarNovaDenuncia(w http.ResponseWriter, req *http.Request) {
 	defer insert.Close()       // fecha o comando Query
 	defer bancoDeDados.Close() // fecha conexão com o Banco
 	// atualiza struct no banco
-	atualizarDenuncias()
+	bd.AtualizarDenuncias()
 
 	//json.NewEncoder(w).Encode(categorias)
 }
@@ -92,8 +73,8 @@ func pegarUmaCategoria(w http.ResponseWriter, req *http.Request) {
 	// OBSERVAÇÂO: comentarios de como funciona esta na 'func GetUsuario'
 	log.Printf("Get uma Categoria")
 	params := mux.Vars(req)
-	var categoriaEncontrada []DenunciasPorCategoria
-	for _, item := range denunciasPorCategoria {
+	var categoriaEncontrada []bd.DenunciasPorCategoria_Struct
+	for _, item := range bd.DenunciasPorCategoria {
 		if strings.ToLower(item.Nome) == strings.ToLower(params["uri"]) {
 			categoriaEncontrada = append(categoriaEncontrada, item)
 		}
@@ -105,12 +86,12 @@ func pegarUmaCategoria(w http.ResponseWriter, req *http.Request) {
 // envia os dados das categorias via GET
 func pegarTodasCategorias(w http.ResponseWriter, req *http.Request) {
 	log.Printf("Get categorias")
-	json.NewEncoder(w).Encode(denuncias)
+	json.NewEncoder(w).Encode(bd.Denuncias)
 }
 
 func main() {
 
-	AtualizarDenuncias()
+	bd.AtualizarDenuncias()
 	router := mux.NewRouter()
 
 	router.HandleFunc("/denuncias/", pegarTodasCategorias).Methods("GET")   // JSON com todas as categorias
