@@ -63,7 +63,7 @@ func gravarNovaDenuncia(w http.ResponseWriter, req *http.Request) {
 	defer insert.Close()       // fecha o comando Query
 	defer bancoDeDados.Close() // fecha conexão com o Banco
 	// atualiza struct no banco
-	bd.AtualizarDenuncias()
+	bd.AtualizarTodasDenuncias()
 
 	//json.NewEncoder(w).Encode(categorias)
 }
@@ -73,7 +73,7 @@ func pegarUmaCategoria(w http.ResponseWriter, req *http.Request) {
 	// OBSERVAÇÂO: comentarios de como funciona esta na 'func GetUsuario'
 	log.Printf("Get uma Categoria")
 	params := mux.Vars(req)
-	var categoriaEncontrada []bd.DenunciasPorCategoria_Struct
+	var categoriaEncontrada []bd.Denuncias_Struct
 	for _, item := range bd.DenunciasPorCategoria {
 		if strings.ToLower(item.Nome) == strings.ToLower(params["uri"]) {
 			categoriaEncontrada = append(categoriaEncontrada, item)
@@ -91,7 +91,7 @@ func pegarTodasCategorias(w http.ResponseWriter, req *http.Request) {
 
 func main() {
 
-	bd.AtualizarDenuncias()
+	bd.AtualizarTodasDenuncias()
 	router := mux.NewRouter()
 
 	router.HandleFunc("/denuncias/", pegarTodasCategorias).Methods("GET")   // JSON com todas as categorias
