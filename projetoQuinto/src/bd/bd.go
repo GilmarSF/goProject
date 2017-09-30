@@ -48,7 +48,7 @@ func GravarNovaDenuncia(nova *NovaDenuncia) {
 	insert, erro := bancoDeDados.Query(`INSERT into tab_denuncia (id, id_categoria, id_localidade) 
 										VALUES (?1, ?2, ?3)`, proximoIdParaGravarNoBanco, &nova.Categoria, &nova.Localidade)
 
-	defer insert.Close()       // fecha o comando Query
+	defer insert.Close()       // fecha comando Query
 	defer bancoDeDados.Close() // fecha conexão com o Banco
 	if erro != nil {
 		log.Println("erro no INSERT:", erro.Error())

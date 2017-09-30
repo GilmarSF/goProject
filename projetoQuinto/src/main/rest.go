@@ -21,7 +21,7 @@ import (
 func gravarNovaDenuncia(w http.ResponseWriter, req *http.Request) {
 	// modelo que deve enviado
 	// {"categoria":"4","localidade":"2"}
-	log.Printf("Post Nova Denuncia")
+	log.Printf("Post mais uma Nova Denuncia")
 	var NovaD bd.NovaDenuncia
 
 	// grava em 'novaD' os dados enviados
