@@ -8,23 +8,23 @@ import (
 	_ "github.com/denisenkom/go-mssqldb"
 )
 
-type Denuncias_Struct struct {
+type DadosDasDenuncias struct {
 	ID     string `json:"id,omitempty"`
 	Nome   string `json:"nome,omitempty"`
 	Total  string `json:"total,omitempty"`
 	Regiao string `json:"regiao,omitempty"`
 }
 
-type NovaDenuncia_Struct struct {
+type NovaDenuncia struct {
 	Categoria  string `json:"categoria,omitempty"`
 	Localidade string `json:"localidade,omitempty"`
 }
 
 // array usado para enviar o total de cada categoria
-var Denuncias []Denuncias_Struct
+var Denuncias []DadosDasDenuncias
 
 // array usado para enviar o total de denuncias por regiao
-var DenunciasPorCategoria []Denuncias_Struct
+var DenunciasPorCategoria []DadosDasDenuncias
 
 // Usado para armazenar o ultimo 'id' do banco de dados
 var proximoIdParaGravarNoBanco int
@@ -42,7 +42,22 @@ var stringDeConexao = fmt.Sprintf("server=%s;user id=%s;password=%s;database=%s;
 var bancoDeDados, _ = sql.Open("tipoBanco", "stringDeConexao")
 var erroBD error
 
-func abrirBanco() {
+func GravarNovaDenuncia(nova *NovaDenuncia) {
+
+	AbrirConexaoBanco()
+	insert, erro := bancoDeDados.Query(`INSERT into tab_denuncia (id, id_categoria, id_localidade) 
+										VALUES (?1, ?2, ?3)`, proximoIdParaGravarNoBanco, &nova.Categoria, &nova.Localidade)
+
+	defer insert.Close()       // fecha o comando Query
+	defer bancoDeDados.Close() // fecha conexão com o Banco
+	if erro != nil {
+		log.Println("erro no INSERT:", erro.Error())
+	} else {
+		proximoIdParaGravarNoBanco++
+	}
+}
+
+func AbrirConexaoBanco() {
 	bancoDeDados, erroBD = sql.Open("mssql", stringDeConexao)
 	if erroBD != nil {
 		log.Println("erro ao conectar ao Banco: ", erroBD.Error())
@@ -55,7 +70,45 @@ func AtualizarTodasDenuncias() {
 	AtualizarUltimoIDBanco()
 }
 
-func selectBanco(query string, den *[]Denuncias_Struct, opcao int) {
+func AtualizarDenuncias() {
+
+	AbrirConexaoBanco()
+
+	Denuncias = Denuncias[:0]
+
+	query := `SELECT d.id_categoria, c.categoria, COUNT(d.id_categoria) 
+			FROM tab_denuncia d JOIN tab_categoria c 
+			ON d.id_categoria = c.id 
+			GROUP BY d.id_categoria, c.categoria`
+
+	consultarNoBanco(query, &Denuncias, 1)
+
+	defer bancoDeDados.Close()
+
+	log.Printf("Denuncias atualizadas")
+}
+
+func AtualizarDenunciasPorCategoria() {
+
+	AbrirConexaoBanco()
+
+	DenunciasPorCategoria = DenunciasPorCategoria[:0]
+
+	query := `SELECT d.id_categoria, c.categoria, COUNT(d.id_localidade), l.regiao
+			FROM tab_denuncia d JOIN tab_categoria c 
+			ON d.id_categoria = c.id 
+			JOIN tab_localidade l 
+			ON d.id_localidade = l.id 
+			GROUP BY d.id_localidade, d.id_categoria, c.categoria, l.regiao`
+
+	consultarNoBanco(query, &DenunciasPorCategoria, 2)
+
+	defer bancoDeDados.Close()
+
+	log.Printf("Denuncias por categorias atualizadas")
+}
+
+func consultarNoBanco(query string, den *[]DadosDasDenuncias, opcao int) {
 
 	retornoSelectBanco, erro := bancoDeDados.Query(query)
 	if erro != nil {
@@ -63,7 +116,7 @@ func selectBanco(query string, den *[]Denuncias_Struct, opcao int) {
 	}
 
 	for retornoSelectBanco.Next() {
-		addCategoria := Denuncias_Struct{}
+		addCategoria := DadosDasDenuncias{}
 		if opcao == 1 {
 			if erro := retornoSelectBanco.Scan(&addCategoria.ID, &addCategoria.Nome, &addCategoria.Total); erro != nil {
 				log.Println("erro ao salvar as categoriasFull retornados do Banco:", erro.Error())
@@ -77,44 +130,10 @@ func selectBanco(query string, den *[]Denuncias_Struct, opcao int) {
 	}
 }
 
-func AtualizarDenuncias() {
-	abrirBanco()
-
-	Denuncias = Denuncias[:0]
-
-	str := `SELECT d.id_categoria, c.categoria, COUNT(d.id_categoria) 
-			FROM tab_denuncia d JOIN tab_categoria c 
-			ON d.id_categoria = c.id 
-			GROUP BY d.id_categoria, c.categoria`
-
-	selectBanco(str, &Denuncias, 1)
-
-	defer bancoDeDados.Close()
-
-	log.Printf("Denuncias atualizadas")
-}
-
-func AtualizarDenunciasPorCategoria() {
-	abrirBanco()
-
-	DenunciasPorCategoria = DenunciasPorCategoria[:0]
-
-	str := `SELECT d.id_categoria, c.categoria, COUNT(d.id_localidade), l.regiao
-			FROM tab_denuncia d JOIN tab_categoria c 
-			ON d.id_categoria = c.id 
-			JOIN tab_localidade l 
-			ON d.id_localidade = l.id 
-			GROUP BY d.id_localidade, d.id_categoria, c.categoria, l.regiao`
-
-	selectBanco(str, &DenunciasPorCategoria, 2)
-
-	defer bancoDeDados.Close()
-
-	log.Printf("Denuncias por categorias atualizadas")
-}
-
 func AtualizarUltimoIDBanco() {
-	abrirBanco()
+
+	AbrirConexaoBanco()
+
 	ultimoIDBanco, erro := bancoDeDados.Query("select MAX(id) from tab_denuncia")
 	if erro != nil {
 		log.Println("erro no SELECT count categoria:", erro.Error())
